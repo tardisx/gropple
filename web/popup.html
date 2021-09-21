@@ -1,20 +1,26 @@
 {{ define "content" }}
-    <div id="layout" class="pure-g pure-u-1">
+    <div id="layout" class="pure-g pure-u-1" x-data="popup()"  x-init="fetch_data()">
+        <h2>Download started</h2>
         <p>Fetching <tt>{{ .Url }}</tt></p>
-        <table class="pure-table" x-data="popup()"  x-init="fetch_data()">
+        <table class="pure-table" >
             <tr><th>current filename</th><td x-text="filename"></td></tr>
             <tr><th>state</th><td x-text="state"></td></tr>
             <tr><th>progress</th><td x-text="percent"></td></tr>
             <tr><th>ETA</th><td x-text="eta"></td></tr>
         </table>
-        <p><a href="/" target="_gropple_status">Status page</a> </p>
+        <p>You can close this window and your download will continue. Check the <a href="/" target="_gropple_status">Status page</a> to see all downloads in progress.</p>
+        <div>
+            <h4>Logs</h4>
+            <pre x-text="log">
+            </pre>
+        </div>
     </div>
 {{ end }}
 {{ define "js" }}
 <script>
     function popup() {
         return { 
-            eta: '', percent: 0.0, state: '??', filename: '', finished: false,
+            eta: '', percent: 0.0, state: '??', filename: '', finished: false, log :'',
             fetch_data() {
                 fetch('/fetch/info/{{ .Id }}')
                 .then(response => response.json())
@@ -26,10 +32,14 @@
                     if (info.files && info.files.length > 0) {
                         this.filename = info.files[info.files.length - 1];
                     }
+                    if (info.log && info.log.length > 0) {
+                        this.log = info.log.join("\n");
+                    }
                     console.log('finish?', this.finished);
                     if (! this.finished) {
-                        setTimeout(() => { this.fetch_data() }, 100);
+                        setTimeout(() => { this.fetch_data() }, 1000);
                     }
+                    console.log('log', this.log);
                 });
             },
         }
