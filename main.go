@@ -26,6 +26,7 @@ type download struct {
 	Pid      int      `json:"pid"`
 	ExitCode int      `json:"exit_code"`
 	State    string   `json:"state"`
+	Finished bool     `json:"finished"`
 	Files    []string `json:"files"`
 	Eta      string   `json:"eta"`
 	Percent  float32  `json:"percent"`
@@ -78,7 +79,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	bookmarkletURL := "javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('http://localhost:8000/fetch?url=',window.location,'yourform','width=500,height=500'));"
 
-	t, err := template.ParseFS(webFS, "web/index.html")
+	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/index.html")
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +95,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("%s", info.BookmarkletURL)
-	err = t.Execute(w, info)
+	err = t.ExecuteTemplate(w, "layout", info)
 	if err != nil {
 		panic(err)
 	}
@@ -131,12 +132,13 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		// XXX should be atomic!
 		downloadId++
 		newDownload := download{
-			Id:      downloadId,
-			Url:     url[0],
-			State:   "starting",
-			Eta:     "?",
-			Percent: 0.0,
-			Log:     make([]string, 0, 1000),
+			Id:       downloadId,
+			Url:      url[0],
+			State:    "starting",
+			Finished: false,
+			Eta:      "?",
+			Percent:  0.0,
+			Log:      make([]string, 0, 1000),
 		}
 		downloads[downloadId] = &newDownload
 		// XXX atomic ^^
@@ -145,11 +147,11 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			queue(&newDownload)
 		}()
-		t, err := template.ParseFS(webFS, "web/popup.html")
+		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
 		}
-		err = t.Execute(w, newDownload)
+		err = t.ExecuteTemplate(w, "layout", newDownload)
 		if err != nil {
 			panic(err)
 		}
@@ -170,21 +172,24 @@ func queue(dl *download) {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		dl.State = "ended"
+		dl.State = "failed"
+		dl.Finished = true
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stdout pipe: %v", err))
 		return
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		dl.State = "ended"
+		dl.State = "failed"
+		dl.Finished = true
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stderr pipe: %v", err))
 		return
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		dl.State = "ended"
+		dl.State = "failed"
+		dl.Finished = true
 		dl.Log = append(dl.Log, fmt.Sprintf("error starting youtube-dl: %v", err))
 		return
 	}
@@ -204,13 +209,13 @@ func queue(dl *download) {
 	}()
 
 	wg.Wait()
+	cmd.Wait()
 
-	dl.State = "ended"
+	dl.State = "complete"
+	dl.Finished = true
 	dl.ExitCode = cmd.ProcessState.ExitCode()
 
 	fmt.Printf("OBJ %#v\n", dl)
-
-	return
 }
 
 func updateDownload(r io.Reader, dl *download) {

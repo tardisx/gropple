@@ -1,13 +1,4 @@
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>fetching {{ .Url }}</title>
-    <script src="//unpkg.com/alpinejs" defer></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/grids-responsive-min.css">
-</head>
-<body>
+{{ define "content" }}
     <div id="layout" class="pure-g pure-u-1">
         <p>Fetching <tt>{{ .Url }}</tt></p>
         <table class="pure-table" x-data="popup()"  x-init="fetch_data()">
@@ -16,13 +7,14 @@
             <tr><th>progress</th><td x-text="percent"></td></tr>
             <tr><th>ETA</th><td x-text="eta"></td></tr>
         </table>
-        <p><a href="/" target="_grobbler">Status page</a> </p>
+        <p><a href="/" target="_gropple_status">Status page</a> </p>
     </div>
-</body>
+{{ end }}
+{{ define "js" }}
 <script>
     function popup() {
         return { 
-            eta: '', percent: 0.0, state: '??', filename: '',
+            eta: '', percent: 0.0, state: '??', filename: '', finished: false,
             fetch_data() {
                 fetch('/fetch/info/{{ .Id }}')
                 .then(response => response.json())
@@ -30,17 +22,18 @@
                     this.eta = info.eta;
                     this.percent = info.percent + "%";
                     this.state = info.state;
+                    this.finished = info.finished;
                     if (info.files && info.files.length > 0) {
                         this.filename = info.files[info.files.length - 1];
                     }
-                    if (this.state != "ended") {
+                    console.log('finish?', this.finished);
+                    if (! this.finished) {
                         setTimeout(() => { this.fetch_data() }, 100);
                     }
                 });
             },
         }
     }
-    
 </script>
-</html>
+{{ end }}
 
