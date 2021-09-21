@@ -64,6 +64,8 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 	}
 
+	log.Print("starting web service")
+	log.Printf("go to %s for details on installing the bookmarklet and to check status", address)
 	log.Fatal(srv.ListenAndServe())
 
 }
