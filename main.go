@@ -37,7 +37,7 @@ var downloads []*download
 var downloadId = 0
 var downloadPath = "./"
 
-var address string = "http://localhost:8000"
+var address string
 
 //go:embed web
 var webFS embed.FS
@@ -45,7 +45,7 @@ var webFS embed.FS
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 8000, "port to listen on")
-	flag.StringVar(&address, "address", "", "address for the service")
+	flag.StringVar(&address, "address", "http://localhost:8000", "address for the service")
 	flag.StringVar(&downloadPath, "path", "", "path for downloaded files - defaults to current directory")
 	flag.Parse()
 
