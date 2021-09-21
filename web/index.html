@@ -1,40 +1,33 @@
 {{ define "content" }}
+<div>
 <p>
     Drag this bookmarklet: <a href="{{ .BookmarkletURL }}">Gropple</a> to your bookmark bar, and click it
     on any page you want to grab the video from.
 </p>
-
-{{ range $k, $v := .Downloads }}
-<div>
-    <h4>{{ $v.Url }}</h4>
-    <table>
-        <tr>
-            <th>state</th>
-            <td>{{ $v.State }}</td>
-        </tr>
-        <tr>
-            <th>percent</th>
-            <td>{{ $v.Percent }}</td>
-        </tr>
-        <tr>
-            <th>files</th>
-            <td>{{ range $i, $f := $v.Files }}{{ $f }} {{ end }}</td>
-        </tr>
-        <tr>
-            <th>exit code</th>
-            <td>{{ $v.ExitCode }}</td>
-        </tr>
-    </table>
-
-    <pre>
-    {{ range $i, $l := $v.Log }}
-line: {{ $l }}
-    {{- end -}}
-    </pre>
-
 </div>
-{{ end }}
 
+<div>
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>id</th><th>filename</th><th>url</th><th>state</th><th>percent</th><th>eta</th><th>finished</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range $k, $v := .Downloads }}
+            <tr>
+                <td>{{ $v.Id }}</td>
+                <td>{{ range $_, $f := $v.Files }}{{ $f }}<br>{{ end }}</td>
+                <td><a href="{{ $v.Url }}">link</a></td>
+                <td>{{ $v.State }}</td>
+                <td>{{ $v.Percent }}</td>
+                <td>{{ $v.Eta }}</td>
+                <td>{{ $v.Finished }}</td>
+            </tr>
+            {{ end }}
+        </tbody>  
+    </table>
+</div>
 {{ end }}
 
 {{ define "js" }}
