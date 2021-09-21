@@ -33,7 +33,7 @@ type download struct {
 	Log      []string `json:"log"`
 }
 
-var downloads map[int]*download
+var downloads []*download
 var downloadId = 0
 var downloadPath = "./"
 
@@ -52,8 +52,6 @@ func main() {
 	r.HandleFunc("/fetch/info/{id}", FetchInfoHandler)
 
 	http.Handle("/", r)
-
-	downloads = make(map[int]*download)
 
 	srv := &http.Server{
 		Handler: r,
@@ -85,7 +83,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Info struct {
-		Downloads      map[int]*download
+		Downloads      []*download
 		BookmarkletURL template.URL
 	}
 
@@ -112,8 +110,13 @@ func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		b, _ := json.Marshal(downloads[id])
-		w.Write(b)
+		for _, dl := range downloads {
+			if dl.Id == id {
+				b, _ := json.Marshal(dl)
+				w.Write(b)
+				return
+			}
+		}
 	} else {
 		http.NotFound(w, r)
 	}
@@ -140,8 +143,9 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 			Percent:  0.0,
 			Log:      make([]string, 0, 1000),
 		}
-		downloads[downloadId] = &newDownload
+		downloads = append(downloads, &newDownload)
 		// XXX atomic ^^
+
 		newDownload.Log = append(newDownload.Log, "start of log...")
 
 		go func() {
