@@ -61,13 +61,6 @@ func main() {
 		ReadTimeout:  0 * time.Second,
 	}
 
-	go func() {
-		for {
-			//fmt.Printf("\n\n%#V\n\n", downloads)
-			time.Sleep(time.Second)
-		}
-	}()
-
 	log.Fatal(srv.ListenAndServe())
 
 }
@@ -92,7 +85,6 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		BookmarkletURL: template.URL(bookmarkletURL),
 	}
 
-	log.Printf("%s", info.BookmarkletURL)
 	err = t.ExecuteTemplate(w, "layout", info)
 	if err != nil {
 		panic(err)
@@ -219,7 +211,10 @@ func queue(dl *download) {
 	dl.Finished = true
 	dl.ExitCode = cmd.ProcessState.ExitCode()
 
-	fmt.Printf("OBJ %#v\n", dl)
+	if dl.ExitCode != 0 {
+		dl.State = "failed"
+	}
+
 }
 
 func updateDownload(r io.Reader, dl *download) {
