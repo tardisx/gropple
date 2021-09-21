@@ -37,11 +37,14 @@ var downloads []*download
 var downloadId = 0
 var downloadPath = "./"
 
+var address string = "http://localhost:8000"
+
 //go:embed web
 var webFS embed.FS
 
 func main() {
-	var address string
+	var port int
+	flag.IntVar(&port, "port", 8000, "port to listen on")
 	flag.StringVar(&address, "address", "", "address for the service")
 	flag.StringVar(&downloadPath, "path", "", "path for downloaded files - defaults to current directory")
 	flag.Parse()
@@ -55,10 +58,10 @@ func main() {
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    "127.0.0.1:8000",
+		Addr:    fmt.Sprintf(":%d", port),
 		// Good practice: enforce timeouts for servers you create!
-		WriteTimeout: 0 * time.Second,
-		ReadTimeout:  0 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  5 * time.Second,
 	}
 
 	log.Fatal(srv.ListenAndServe())
@@ -68,7 +71,7 @@ func main() {
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
-	bookmarkletURL := "javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('http://localhost:8000/fetch?url=',window.location,'yourform','width=500,height=500'));"
+	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=500,height=500'));", address)
 
 	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/index.html")
 	if err != nil {
