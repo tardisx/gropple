@@ -39,7 +39,7 @@ var downloadPath = "./"
 
 var address string
 
-const currentVersion = "v0.01"
+const currentVersion = "v0.02"
 
 //go:embed web
 var webFS embed.FS
@@ -281,4 +281,29 @@ func updateMetadata(dl *download, s string) {
 	if len(matches) == 2 {
 		dl.Files = append(dl.Files, matches[1])
 	}
+
+	// This means a file has been "created" by merging others
+	// [ffmpeg] Merging formats into "Toto - Africa (Official HD Video)-FTQbiNvZqaY.mp4"
+	mergedFilename := regexp.MustCompile(`Merging formats into "(.+)$`)
+	matches = mergedFilename.FindStringSubmatch(s)
+	if len(matches) == 2 {
+		dl.Files = append(dl.Files, matches[1])
+	}
+
+	// This means a file has been deleted
+	// Gross - this time it's unquoted and has trailing guff
+	// Deleting original file Toto - Africa (Official HD Video)-FTQbiNvZqaY.f137.mp4 (pass -k to keep)
+	// This is very fragile
+	deletedFile := regexp.MustCompile(`Deleting original file (.+) \(pass -k to keep\)$`)
+	matches = deletedFile.FindStringSubmatch(s)
+	if len(matches) == 2 {
+		// find the index
+		for i, f := range dl.Files {
+			if f == matches[1] {
+				dl.Files = append(dl.Files[:i], dl.Files[i+1:]...)
+				break
+			}
+		}
+	}
+
 }
