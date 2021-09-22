@@ -1,5 +1,7 @@
 # gropple
 
+A web service and bookmarklet to download videos with a single click.
+
 ## Pre-requisites
 
 * a passing familiarity with the command line
@@ -12,7 +14,7 @@
 
 ## Binaries
 
-TBD
+Binaries are available at https://github.com/tardisx/gropple/releases
 
 ## Running
 
