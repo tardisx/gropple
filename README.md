@@ -8,7 +8,7 @@ A web service and bookmarklet to download videos with a single click.
 
 * a passing familiarity with the command line
 * youtube-dl (plus any of its required dependencies, like ffmpeg)
-* golang compiler
+* golang compiler (if you'd like to build from source)
 
 ## Build
 
