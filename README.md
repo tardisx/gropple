@@ -2,7 +2,7 @@
 
 A web service and bookmarklet to download videos with a single click.
 
-![Screencast](http://imgur.com/a/w2CBlCZ)
+![Screencast](https://i.imgur.com/CGpVA7W.mp4)
 
 ## Pre-requisites
 
