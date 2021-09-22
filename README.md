@@ -42,10 +42,4 @@ You may close this window at any time without stopping the download, the status 
 
 Many things. Please raise an issue after checking the [currently open issues](https://github.com/tardisx/gropple/issues).
 
-* queue downloads if too many started (maybe by domain)
-* show logs from the index page
-* process logs better to note post-processing (for instance when video and audio are downloaded separately and then combined)
-* configurable options for youtube-dl, or the ability to use various youtube-dl forks
-
-
 
