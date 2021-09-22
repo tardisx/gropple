@@ -44,8 +44,8 @@ var webFS embed.FS
 
 func main() {
 	var port int
-	flag.IntVar(&port, "port", 8000, "port to listen on")
-	flag.StringVar(&address, "address", "http://localhost:8000", "address for the service")
+	flag.IntVar(&port, "port", 6283, "port to listen on")
+	flag.StringVar(&address, "address", "http://localhost:6283", "address for the service")
 	flag.StringVar(&downloadPath, "path", "", "path for downloaded files - defaults to current directory")
 	flag.Parse()
 

@@ -16,9 +16,9 @@ TBD
 
 ## Running
 
-    gropple -port 8000 -address http://hostname:8000 -path /downloads
+    gropple -port 6283 -address http://hostname:6283 -path /downloads
 
-With no arguments, it will listen on port 8000 and use an address of 'http://localhost:8000'.
+With no arguments, it will listen on port 6283 and use an address of 'http://localhost:6283'.
 
 The address must be specified so that the bookmarklet can refer to the correct
 host when it is not running on your local machine. You may also need to specify
@@ -26,7 +26,7 @@ a different address if you are running it behind a proxy server or similar.
 
 ## Using
 
-Bring up `http://localhost:8000` (or your chosen address) in your browser. You should see a link to the bookmarklet at the top of the screen, and the list of downloads (currently empty).
+Bring up `http://localhost:6283` (or your chosen address) in your browser. You should see a link to the bookmarklet at the top of the screen, and the list of downloads (currently empty).
 
 Drag the bookmarklet to your favourites bar, or otherwise bookmark it as you see fit.
 
