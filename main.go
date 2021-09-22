@@ -39,6 +39,8 @@ var downloadPath = "./"
 
 var address string
 
+const currentVersion = "v0.01"
+
 //go:embed web
 var webFS embed.FS
 
@@ -64,7 +66,7 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 	}
 
-	log.Print("starting web service")
+	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", currentVersion)
 	log.Printf("go to %s for details on installing the bookmarklet and to check status", address)
 	log.Fatal(srv.ListenAndServe())
 
