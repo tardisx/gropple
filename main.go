@@ -50,7 +50,7 @@ var defaultArgs = args{
 	"--newline",
 }
 
-const currentVersion = "v0.02"
+const currentVersion = "v0.03"
 
 //go:embed web
 var webFS embed.FS
