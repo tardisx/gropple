@@ -61,7 +61,7 @@ func (i *args) Set(value string) error {
 }
 
 func (i *args) String() string {
-	return fmt.Sprintf("%v", i)
+	return strings.Join(*i, ",")
 }
 
 func main() {
