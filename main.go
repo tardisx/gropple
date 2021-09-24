@@ -39,17 +39,44 @@ var downloadPath = "./"
 
 var address string
 
+var dlCmd = "youtube-dl"
+
+type args []string
+
+var dlArgs = args{}
+var defaultArgs = args{
+	"--write-info-json",
+	"-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+	"--newline",
+}
+
 const currentVersion = "v0.02"
 
 //go:embed web
 var webFS embed.FS
+
+func (i *args) Set(value string) error {
+	*i = append(*i, strings.TrimSpace(value))
+	return nil
+}
+
+func (i *args) String() string {
+	return fmt.Sprintf("%v", i)
+}
 
 func main() {
 	var port int
 	flag.IntVar(&port, "port", 6283, "port to listen on")
 	flag.StringVar(&address, "address", "http://localhost:6283", "address for the service")
 	flag.StringVar(&downloadPath, "path", "", "path for downloaded files - defaults to current directory")
+	flag.StringVar(&dlCmd, "dl-cmd", "youtube-dl", "downloader to use")
+	flag.Var(&dlArgs, "dl-args", "arguments to the downloader")
+
 	flag.Parse()
+
+	if len(dlArgs) == 0 {
+		dlArgs = defaultArgs
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
@@ -164,13 +191,11 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func queue(dl *download) {
+	cmdSlice := []string{}
+	cmdSlice = append(cmdSlice, dlArgs...)
+	cmdSlice = append(cmdSlice, dl.Url)
 
-	cmd := exec.Command(
-		"youtube-dl",
-		"--write-info-json",
-		"-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-		"--newline", dl.Url,
-	)
+	cmd := exec.Command(dlCmd, cmdSlice...)
 	cmd.Dir = downloadPath
 
 	stdout, err := cmd.StdoutPipe()
