@@ -18,6 +18,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/tardisx/gropple/version"
 )
 
 type download struct {
@@ -50,7 +51,7 @@ var defaultArgs = args{
 	"--newline",
 }
 
-const currentVersion = "v0.04"
+var versionInfo = version.Info{CurrentVersion: "v0.4.0"}
 
 //go:embed web
 var webFS embed.FS
@@ -83,6 +84,7 @@ func main() {
 	r.HandleFunc("/fetch", FetchHandler)
 	r.HandleFunc("/fetch/info", FetchInfoHandler)
 	r.HandleFunc("/fetch/info/{id}", FetchInfoOneHandler)
+	r.HandleFunc("/version", VersionHandler)
 
 	http.Handle("/", r)
 
@@ -94,10 +96,26 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 	}
 
-	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", currentVersion)
+	// check for a new version every 4 hours
+	go func() {
+		for {
+			versionInfo.UpdateGitHubVersion()
+			time.Sleep(time.Hour * 4)
+		}
+	}()
+
+	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
 	log.Printf("go to %s for details on installing the bookmarklet and to check status", address)
 	log.Fatal(srv.ListenAndServe())
+}
 
+func VersionHandler(w http.ResponseWriter, r *http.Request) {
+	if versionInfo.GithubVersionFetched {
+		b, _ := json.Marshal(versionInfo)
+		w.Write(b)
+	} else {
+		w.WriteHeader(400)
+	}
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {

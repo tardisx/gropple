@@ -1,12 +1,24 @@
 {{ define "content" }}
-<div>
-<p>
-    Drag this bookmarklet: <a href="{{ .BookmarkletURL }}">Gropple</a> to your bookmark bar, and click it
-    on any page you want to grab the video from.
-</p>
-</div>
 
-<div x-data="index()" x-init="fetch_data()">
+
+<div x-data="index()" x-init="fetch_data(); fetch_version()">
+
+    <h2>gropple</h2>
+
+    <p x-show="version && version.upgrade_available">
+        <a href="https://github.com/tardisx/gropple/releases">Upgrade is available</a> - 
+        you have 
+        <span x-text="version.current_version"></span> and 
+        <span x-text="version.github_version"></span>
+    is available.</p>
+
+    <div>
+        <p>
+            Drag this bookmarklet: <a href="{{ .BookmarkletURL }}">Gropple</a> to your bookmark bar, and click it
+            on any page you want to grab the video from.
+        </p>
+    </div>
+
     <table class="pure-table">
         <thead>
             <tr>
@@ -39,7 +51,19 @@
 <script>
     function index() {
         return { 
-            items: [],
+            items: [], version: {},
+            fetch_version() {
+                fetch('/version')
+                .then(response => response.json())
+                .then(info => {
+                    this.version = info;
+                    setTimeout(() => { this.fetch_version() }, 1000 * 60 );
+                })
+                .catch(error => {
+                    console.log('failed to fetch version info - will retry');
+                    setTimeout(() => { this.fetch_version() }, 1000 );
+                });
+            },
             fetch_data() {
                 fetch('/fetch/info')
                 .then(response => response.json())
