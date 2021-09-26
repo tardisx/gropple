@@ -18,7 +18,7 @@
                 <tr>
                     <td x-text="item.id"></td>
                     <td x-text="item.files"></td>
-                    <td x-text="item.url"></td>
+                    <td><a x-bind:href="item.url">link</a></td>
                     <td x-text="item.state"></td>
                     <td x-text="item.percent"></td>
                     <td x-text="item.eta"></td>
@@ -44,7 +44,10 @@
                 fetch('/fetch/info')
                 .then(response => response.json())
                 .then(info => {
-                    this.items = info;
+                    // will be null if no downloads yet
+                    if (info) {
+                        this.items = info;
+                    }
                     setTimeout(() => { this.fetch_data() }, 1000);
                 })
             },

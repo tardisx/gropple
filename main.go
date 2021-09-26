@@ -157,11 +157,20 @@ func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
 func FetchHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
-	url, present := query["url"] //filters=["color", "price", "brand"]
+	url, present := query["url"]
 
 	if !present {
-		fmt.Fprint(w, "something")
+		w.WriteHeader(400)
+		fmt.Fprint(w, "No url supplied")
+		return
 	} else {
+
+		// check the URL for a sudden but inevitable betrayal
+		if strings.Contains(url[0], address) {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "you musn't gropple your gropple :-)")
+			return
+		}
 
 		// create the record
 		// XXX should be atomic!
@@ -183,6 +192,7 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			queue(&newDownload)
 		}()
+
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
@@ -191,8 +201,6 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-
-		//		fmt.Fprintf(w, "Started DL %d!", downloadId)
 	}
 }
 
