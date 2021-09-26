@@ -6,7 +6,7 @@
 </p>
 </div>
 
-<div>
+<div x-data="index()" x-init="fetch_data()">
     <table class="pure-table">
         <thead>
             <tr>
@@ -14,16 +14,21 @@
             </tr>
         </thead>
         <tbody>
+            <template x-for="item in items">
+                <tr>
+                    <td x-text="item.id"></td>
+                    <td x-text="item.files"></td>
+                    <td x-text="item.url"></td>
+                    <td x-text="item.state"></td>
+                    <td x-text="item.percent"></td>
+                    <td x-text="item.eta"></td>
+                    <td x-text="item.finished"></td>
+                </tr>
+    
+            </template>
+              
+
             {{ range $k, $v := .Downloads }}
-            <tr>
-                <td>{{ $v.Id }}</td>
-                <td>{{ range $_, $f := $v.Files }}{{ $f }}<br>{{ end }}</td>
-                <td><a href="{{ $v.Url }}">link</a></td>
-                <td>{{ $v.State }}</td>
-                <td>{{ $v.Percent }}</td>
-                <td>{{ $v.Eta }}</td>
-                <td>{{ $v.Finished }}</td>
-            </tr>
             {{ end }}
         </tbody>  
     </table>
@@ -31,4 +36,19 @@
 {{ end }}
 
 {{ define "js" }}
+<script>
+    function index() {
+        return { 
+            items: [],
+            fetch_data() {
+                fetch('/fetch/info')
+                .then(response => response.json())
+                .then(info => {
+                    this.items = info;
+                    setTimeout(() => { this.fetch_data() }, 1000);
+                })
+            },
+        }
+    }
+</script>
 {{ end }}

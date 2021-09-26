@@ -81,7 +81,8 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
 	r.HandleFunc("/fetch", FetchHandler)
-	r.HandleFunc("/fetch/info/{id}", FetchInfoHandler)
+	r.HandleFunc("/fetch/info", FetchInfoHandler)
+	r.HandleFunc("/fetch/info/{id}", FetchInfoOneHandler)
 
 	http.Handle("/", r)
 
@@ -126,7 +127,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
+func FetchInfoOneHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idString := vars["id"]
 	if idString != "" {
@@ -146,6 +147,11 @@ func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.NotFound(w, r)
 	}
+}
+
+func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
+	b, _ := json.Marshal(downloads)
+	w.Write(b)
 }
 
 func FetchHandler(w http.ResponseWriter, r *http.Request) {
