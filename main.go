@@ -309,7 +309,7 @@ func updateMetadata(dl *download, s string) {
 
 	// This means a file has been "created" by merging others
 	// [ffmpeg] Merging formats into "Toto - Africa (Official HD Video)-FTQbiNvZqaY.mp4"
-	mergedFilename := regexp.MustCompile(`Merging formats into "(.+)$`)
+	mergedFilename := regexp.MustCompile(`Merging formats into "(.+)"$`)
 	matches = mergedFilename.FindStringSubmatch(s)
 	if len(matches) == 2 {
 		dl.Files = append(dl.Files, matches[1])
