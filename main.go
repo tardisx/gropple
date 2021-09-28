@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -18,6 +17,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/tardisx/gropple/config"
 	"github.com/tardisx/gropple/version"
 )
 
@@ -36,48 +36,16 @@ type download struct {
 
 var downloads []*download
 var downloadId = 0
-var downloadPath = "./"
-
-var address string
-
-var dlCmd = "youtube-dl"
-
-type args []string
-
-var dlArgs = args{}
-var defaultArgs = args{
-	"--write-info-json",
-	"-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-	"--newline",
-}
 
 var versionInfo = version.Info{CurrentVersion: "v0.4.0"}
 
 //go:embed web
 var webFS embed.FS
 
-func (i *args) Set(value string) error {
-	*i = append(*i, strings.TrimSpace(value))
-	return nil
-}
-
-func (i *args) String() string {
-	return strings.Join(*i, ",")
-}
+var conf config.Config
 
 func main() {
-	var port int
-	flag.IntVar(&port, "port", 6283, "port to listen on")
-	flag.StringVar(&address, "address", "http://localhost:6283", "address for the service")
-	flag.StringVar(&downloadPath, "path", "", "path for downloaded files - defaults to current directory")
-	flag.StringVar(&dlCmd, "dl-cmd", "youtube-dl", "downloader to use")
-	flag.Var(&dlArgs, "dl-args", "arguments to the downloader")
-
-	flag.Parse()
-
-	if len(dlArgs) == 0 {
-		dlArgs = defaultArgs
-	}
+	conf = config.DefaultConfig()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
@@ -90,7 +58,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    fmt.Sprintf(":%d", port),
+		Addr:    fmt.Sprintf(":%d", conf.Server.Port),
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 5 * time.Second,
 		ReadTimeout:  5 * time.Second,
@@ -105,7 +73,7 @@ func main() {
 	}()
 
 	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
-	log.Printf("go to %s for details on installing the bookmarklet and to check status", address)
+	log.Printf("go to %s for details on installing the bookmarklet and to check status", conf.Server.Address)
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -121,7 +89,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
-	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=500,height=500'));", address)
+	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=500,height=500'));", conf.Server.Address)
 
 	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/index.html")
 	if err != nil {
@@ -184,7 +152,7 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		// check the URL for a sudden but inevitable betrayal
-		if strings.Contains(url[0], address) {
+		if strings.Contains(url[0], conf.Server.Address) {
 			w.WriteHeader(400)
 			fmt.Fprint(w, "you musn't gropple your gropple :-)")
 			return
@@ -224,11 +192,11 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 
 func queue(dl *download) {
 	cmdSlice := []string{}
-	cmdSlice = append(cmdSlice, dlArgs...)
+	cmdSlice = append(cmdSlice, conf.DownloadProfiles[0].Args...)
 	cmdSlice = append(cmdSlice, dl.Url)
 
-	cmd := exec.Command(dlCmd, cmdSlice...)
-	cmd.Dir = downloadPath
+	cmd := exec.Command(conf.DownloadProfiles[0].Command, cmdSlice...)
+	cmd.Dir = conf.Server.DownloadPath
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
