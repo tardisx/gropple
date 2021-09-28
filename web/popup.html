@@ -22,7 +22,7 @@
         return { 
             eta: '', percent: 0.0, state: '??', filename: '', finished: false, log :'',
             fetch_data() {
-                fetch('/fetch/info/{{ .Id }}')
+                fetch('/rest/fetch/info/{{ .Id }}')
                 .then(response => response.json())
                 .then(info => {
                     this.eta = info.eta;

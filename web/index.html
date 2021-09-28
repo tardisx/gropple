@@ -19,6 +19,8 @@
         </p>
     </div>
 
+    <a href="/config">config</a>
+
     <table class="pure-table">
         <thead>
             <tr>
@@ -53,7 +55,7 @@
         return { 
             items: [], version: {},
             fetch_version() {
-                fetch('/version')
+                fetch('/rest/version')
                 .then(response => response.json())
                 .then(info => {
                     this.version = info;
@@ -65,7 +67,7 @@
                 });
             },
             fetch_data() {
-                fetch('/fetch/info')
+                fetch('/rest/fetch/info')
                 .then(response => response.json())
                 .then(info => {
                     // will be null if no downloads yet

@@ -1,0 +1,92 @@
+{{ define "content" }}
+
+
+<div x-data="config()" x-init="fetch_config();">
+
+    <h2>gropple config</h2>
+
+    <p x-show="version && version.upgrade_available">
+        <a href="https://github.com/tardisx/gropple/releases">Upgrade is available</a> - 
+        you have 
+        <span x-text="version.current_version"></span> and 
+        <span x-text="version.github_version"></span>
+    is available.</p>
+
+    <div class="pure-g">
+        <div class="pure-u-md-1-2">
+   
+            <form class="pure-form pure-form-stacked">
+                <fieldset>
+
+                    <legend>Server</legend>
+
+                    <label for="config-server-port">Listen Port</label>
+                    <input type="text" id="config-server-port" placeholder="port number" x-model="config.server.port" />
+                    <span class="pure-form-message">The port the web server will listen on.</span>
+
+                    <label for="config-server-address">Server address (URL)</label>
+                    <input type="text" id="config-server-address" placeholder="server address" x-model="config.server.address" />
+                    <span class="pure-form-message">
+                        The address the service will be available on. Generally it will be http://hostname:port where
+                        hostname is the host the server is running on, and port is the port you set above.
+                    </span>
+
+                    <label for="config-server-downloadpath">Download path</label>
+                    <input type="text" id="config-server-downloadpath" placeholder="path" x-model="config.server.download_path" />
+                    <span class="pure-form-message">The path on the server to download files to.</span>
+
+                    <legend>UI</legend>
+
+                    <label for="config-ui-popupwidth">Popup Width</label>
+                    <input type="text" id="config-ui-popupwidth" placeholder="width in pixels" x-model="config.ui.popup_width" />
+                    <span class="pure-form-message">The width of popup windows in pixels.</span>
+
+                    <label for="config-ui-popupheight">Popup Height</label>
+                    <input type="text" id="config-ui-popupheight" placeholder="height in pixels" x-model="config.ui.popup_height" />
+                    <span class="pure-form-message">The height of popup windows in pixels.</span>
+
+                </fieldset>
+            </form>
+
+        </div>
+        <div class="pure-u-md-1-2">
+            <form class="pure-form pure-form-stacked">
+                <fieldset>
+
+                    <legend>Download Profiles</legend>
+
+                    <label for="config-profiles-0-name">Name of this profile</label>
+                    <input type="text" id="config-profiles-0-name" placeholder="name" x-model="config.profiles[0].name" />
+                    <span class="pure-form-message">The name of this profile. For your information only.</span>
+
+                </fieldset>
+            </form>
+        </div>
+
+    </div>
+   
+
+</div>
+
+{{ end }}
+
+{{ define "js" }}
+<script>
+    function config() {
+        return { 
+            config: { server : {}, ui : {}, profiles: [{}] }, version: {},
+            fetch_config() {
+                fetch('/rest/config')
+                .then(response => response.json())
+                .then(config => {
+                    this.config = config;
+                })
+                .catch(error => {
+                    console.log('failed to fetch version info - will retry');
+                    setTimeout(() => { this.fetch_version() }, 1000 );
+                });
+            },
+        }
+    }
+</script>
+{{ end }}

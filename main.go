@@ -37,7 +37,7 @@ type download struct {
 var downloads []*download
 var downloadId = 0
 
-var versionInfo = version.Info{CurrentVersion: "v0.4.0"}
+var versionInfo = version.Info{CurrentVersion: "v0.5.0"}
 
 //go:embed web
 var webFS embed.FS
@@ -49,10 +49,13 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
+	r.HandleFunc("/config", ConfigHandler)
 	r.HandleFunc("/fetch", FetchHandler)
-	r.HandleFunc("/fetch/info", FetchInfoHandler)
-	r.HandleFunc("/fetch/info/{id}", FetchInfoOneHandler)
-	r.HandleFunc("/version", VersionHandler)
+
+	r.HandleFunc("/rest/fetch/info", FetchInfoHandler)
+	r.HandleFunc("/rest/fetch/info/{id}", FetchInfoOneHandler)
+	r.HandleFunc("/rest/version", VersionHandler)
+	r.HandleFunc("/rest/config", ConfigRESTHandler)
 
 	http.Handle("/", r)
 
@@ -111,6 +114,27 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+}
+
+func ConfigHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+
+	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/config.html")
+	if err != nil {
+		panic(err)
+	}
+
+	err = t.ExecuteTemplate(w, "layout", nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+
+	b, _ := json.Marshal(conf)
+	w.Write(b)
 }
 
 func FetchInfoOneHandler(w http.ResponseWriter, r *http.Request) {
