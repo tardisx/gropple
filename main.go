@@ -18,6 +18,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/tardisx/gropple/version"
 )
 
 type download struct {
@@ -50,7 +51,7 @@ var defaultArgs = args{
 	"--newline",
 }
 
-const currentVersion = "v0.03"
+var versionInfo = version.Info{CurrentVersion: "v0.4.0"}
 
 //go:embed web
 var webFS embed.FS
@@ -81,7 +82,9 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
 	r.HandleFunc("/fetch", FetchHandler)
-	r.HandleFunc("/fetch/info/{id}", FetchInfoHandler)
+	r.HandleFunc("/fetch/info", FetchInfoHandler)
+	r.HandleFunc("/fetch/info/{id}", FetchInfoOneHandler)
+	r.HandleFunc("/version", VersionHandler)
 
 	http.Handle("/", r)
 
@@ -93,10 +96,26 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 	}
 
-	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", currentVersion)
+	// check for a new version every 4 hours
+	go func() {
+		for {
+			versionInfo.UpdateGitHubVersion()
+			time.Sleep(time.Hour * 4)
+		}
+	}()
+
+	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
 	log.Printf("go to %s for details on installing the bookmarklet and to check status", address)
 	log.Fatal(srv.ListenAndServe())
+}
 
+func VersionHandler(w http.ResponseWriter, r *http.Request) {
+	if versionInfo.GithubVersionFetched {
+		b, _ := json.Marshal(versionInfo)
+		w.Write(b)
+	} else {
+		w.WriteHeader(400)
+	}
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +145,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
+func FetchInfoOneHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idString := vars["id"]
 	if idString != "" {
@@ -148,14 +167,28 @@ func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
+	b, _ := json.Marshal(downloads)
+	w.Write(b)
+}
+
 func FetchHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
-	url, present := query["url"] //filters=["color", "price", "brand"]
+	url, present := query["url"]
 
 	if !present {
-		fmt.Fprint(w, "something")
+		w.WriteHeader(400)
+		fmt.Fprint(w, "No url supplied")
+		return
 	} else {
+
+		// check the URL for a sudden but inevitable betrayal
+		if strings.Contains(url[0], address) {
+			w.WriteHeader(400)
+			fmt.Fprint(w, "you musn't gropple your gropple :-)")
+			return
+		}
 
 		// create the record
 		// XXX should be atomic!
@@ -177,6 +210,7 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			queue(&newDownload)
 		}()
+
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
@@ -185,8 +219,6 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-
-		//		fmt.Fprintf(w, "Started DL %d!", downloadId)
 	}
 }
 
@@ -309,7 +341,7 @@ func updateMetadata(dl *download, s string) {
 
 	// This means a file has been "created" by merging others
 	// [ffmpeg] Merging formats into "Toto - Africa (Official HD Video)-FTQbiNvZqaY.mp4"
-	mergedFilename := regexp.MustCompile(`Merging formats into "(.+)$`)
+	mergedFilename := regexp.MustCompile(`Merging formats into "(.+)"$`)
 	matches = mergedFilename.FindStringSubmatch(s)
 	if len(matches) == 2 {
 		dl.Files = append(dl.Files, matches[1])

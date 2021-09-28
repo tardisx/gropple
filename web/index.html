@@ -1,12 +1,24 @@
 {{ define "content" }}
-<div>
-<p>
-    Drag this bookmarklet: <a href="{{ .BookmarkletURL }}">Gropple</a> to your bookmark bar, and click it
-    on any page you want to grab the video from.
-</p>
-</div>
 
-<div>
+
+<div x-data="index()" x-init="fetch_data(); fetch_version()">
+
+    <h2>gropple</h2>
+
+    <p x-show="version && version.upgrade_available">
+        <a href="https://github.com/tardisx/gropple/releases">Upgrade is available</a> - 
+        you have 
+        <span x-text="version.current_version"></span> and 
+        <span x-text="version.github_version"></span>
+    is available.</p>
+
+    <div>
+        <p>
+            Drag this bookmarklet: <a href="{{ .BookmarkletURL }}">Gropple</a> to your bookmark bar, and click it
+            on any page you want to grab the video from.
+        </p>
+    </div>
+
     <table class="pure-table">
         <thead>
             <tr>
@@ -14,16 +26,21 @@
             </tr>
         </thead>
         <tbody>
+            <template x-for="item in items">
+                <tr>
+                    <td x-text="item.id"></td>
+                    <td x-text="item.files"></td>
+                    <td><a x-bind:href="item.url">link</a></td>
+                    <td x-text="item.state"></td>
+                    <td x-text="item.percent"></td>
+                    <td x-text="item.eta"></td>
+                    <td x-text="item.finished"></td>
+                </tr>
+    
+            </template>
+              
+
             {{ range $k, $v := .Downloads }}
-            <tr>
-                <td>{{ $v.Id }}</td>
-                <td>{{ range $_, $f := $v.Files }}{{ $f }}<br>{{ end }}</td>
-                <td><a href="{{ $v.Url }}">link</a></td>
-                <td>{{ $v.State }}</td>
-                <td>{{ $v.Percent }}</td>
-                <td>{{ $v.Eta }}</td>
-                <td>{{ $v.Finished }}</td>
-            </tr>
             {{ end }}
         </tbody>  
     </table>
@@ -31,4 +48,34 @@
 {{ end }}
 
 {{ define "js" }}
+<script>
+    function index() {
+        return { 
+            items: [], version: {},
+            fetch_version() {
+                fetch('/version')
+                .then(response => response.json())
+                .then(info => {
+                    this.version = info;
+                    setTimeout(() => { this.fetch_version() }, 1000 * 60 );
+                })
+                .catch(error => {
+                    console.log('failed to fetch version info - will retry');
+                    setTimeout(() => { this.fetch_version() }, 1000 );
+                });
+            },
+            fetch_data() {
+                fetch('/fetch/info')
+                .then(response => response.json())
+                .then(info => {
+                    // will be null if no downloads yet
+                    if (info) {
+                        this.items = info;
+                    }
+                    setTimeout(() => { this.fetch_data() }, 1000);
+                })
+            },
+        }
+    }
+</script>
 {{ end }}
