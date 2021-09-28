@@ -52,7 +52,7 @@ The default downloader is youtube-dl. It is possible to use a different download
 via the `-dl-cmd` command line option.
 
 While `gropple` will use your `PATH` to find the executable, you may also want 
-to specify a full path instead.o
+to specify a full path instead.
 
 So, for instance, to use `youtube-dlc` instead of `youtube-dl` and specify the 
 full path:
