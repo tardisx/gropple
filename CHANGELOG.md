@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 - Configuration moved from command line to an app-managed YAML file
+- Configuration via web interface
 
 ## [v0.4.0] - 2021-09-26
 
