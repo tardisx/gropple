@@ -142,7 +142,6 @@ func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		log.Printf("Got this request:", string(b))
 		err = conf.UpdateFromJSON(b)
 
 		if err != nil {
