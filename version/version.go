@@ -24,7 +24,7 @@ func (i *Info) UpdateGitHubVersion() error {
 	versionUrl := "https://api.github.com/repos/tardisx/gropple/releases"
 	resp, err := http.Get(versionUrl)
 	if err != nil {
-		log.Printf("Error getting response. ", err)
+		log.Printf("Error getting response: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
