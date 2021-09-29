@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 
 	"gopkg.in/yaml.v2"
@@ -30,7 +32,7 @@ type Config struct {
 	ConfigVersion    int               `yaml:"config_version" json:"config_version"`
 }
 
-func DefaultConfig() Config {
+func DefaultConfig() *Config {
 	defaultConfig := Config{}
 	stdProfile := DownloadProfile{Name: "standard youtube-dl video", Command: "youtube-dl", Args: []string{
 		"--newline",
@@ -40,6 +42,8 @@ func DefaultConfig() Config {
 	}}
 
 	defaultConfig.DownloadProfiles = append(defaultConfig.DownloadProfiles, stdProfile)
+	defaultConfig.DownloadProfiles = append(defaultConfig.DownloadProfiles, stdProfile)
+
 	defaultConfig.Server.Port = 6123
 	defaultConfig.Server.Address = "http://localhost:6123"
 	defaultConfig.Server.DownloadPath = "./"
@@ -49,7 +53,25 @@ func DefaultConfig() Config {
 
 	defaultConfig.ConfigVersion = 1
 
-	return defaultConfig
+	return &defaultConfig
+}
+
+func (c *Config) UpdateFromJSON(j []byte) error {
+	newConfig := Config{}
+	err := json.Unmarshal(j, &newConfig)
+	if err != nil {
+		log.Printf("Unmarshal error in config: %v", err)
+		return err
+	}
+	log.Printf("Config is unmarshalled ok")
+
+	// other checks
+	if newConfig.UI.PopupHeight < 100 || newConfig.UI.PopupHeight > 2000 {
+		return errors.New("bad popup height")
+	}
+
+	*c = newConfig
+	return nil
 }
 
 func WriteDefaultConfig(path string) {

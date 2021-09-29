@@ -42,7 +42,7 @@ var versionInfo = version.Info{CurrentVersion: "v0.5.0"}
 //go:embed web
 var webFS embed.FS
 
-var conf config.Config
+var conf *config.Config
 
 func main() {
 	conf = config.DefaultConfig()
@@ -131,7 +131,28 @@ func ConfigHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+
+	type errorResponse struct {
+		Error string `json:"error"`
+	}
+
+	if r.Method == "POST" {
+		log.Printf("Updating config")
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		log.Printf("Got this request:", string(b))
+		err = conf.UpdateFromJSON(b)
+
+		if err != nil {
+			errorRes := errorResponse{Error: err.Error()}
+			errorResB, _ := json.Marshal(errorRes)
+			w.WriteHeader(400)
+			w.Write(errorResB)
+			return
+		}
+	}
 
 	b, _ := json.Marshal(conf)
 	w.Write(b)

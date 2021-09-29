@@ -24,7 +24,8 @@ func (i *Info) UpdateGitHubVersion() error {
 	versionUrl := "https://api.github.com/repos/tardisx/gropple/releases"
 	resp, err := http.Get(versionUrl)
 	if err != nil {
-		log.Fatal("Error getting response. ", err)
+		log.Printf("Error getting response. ", err)
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -65,11 +66,11 @@ func (i *Info) canUpgrade() bool {
 	log.Printf("We are %s, github is %s", i.CurrentVersion, i.GithubVersion)
 
 	if !semver.IsValid(i.CurrentVersion) {
-		log.Fatalf("current version %s is invalid", i.CurrentVersion)
+		log.Printf("current version %s is invalid", i.CurrentVersion)
 	}
 
 	if !semver.IsValid(i.GithubVersion) {
-		log.Fatalf("github version %s is invalid", i.GithubVersion)
+		log.Printf("github version %s is invalid", i.GithubVersion)
 	}
 
 	if semver.Compare(i.CurrentVersion, i.GithubVersion) == -1 {
