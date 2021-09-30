@@ -3,8 +3,10 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -35,15 +37,20 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	defaultConfig := Config{}
-	stdProfile := DownloadProfile{Name: "standard youtube-dl video", Command: "youtube-dl", Args: []string{
+	stdProfile := DownloadProfile{Name: "standard video", Command: "youtube-dl", Args: []string{
 		"--newline",
 		"--write-info-json",
 		"-f",
 		"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
 	}}
+	mp3Profile := DownloadProfile{Name: "standard mp3", Command: "youtube-dl", Args: []string{
+		"–extract-audio",
+		"--audio-format", "mp3",
+		"--prefer-ffmpeg",
+	}}
 
 	defaultConfig.DownloadProfiles = append(defaultConfig.DownloadProfiles, stdProfile)
-	defaultConfig.DownloadProfiles = append(defaultConfig.DownloadProfiles, stdProfile)
+	defaultConfig.DownloadProfiles = append(defaultConfig.DownloadProfiles, mp3Profile)
 
 	defaultConfig.Server.Port = 6123
 	defaultConfig.Server.Address = "http://localhost:6123"
@@ -64,11 +71,59 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 		log.Printf("Unmarshal error in config: %v", err)
 		return err
 	}
-	log.Printf("Config is unmarshalled ok")
 
-	// other checks
+	// sanity checks
 	if newConfig.UI.PopupHeight < 100 || newConfig.UI.PopupHeight > 2000 {
-		return errors.New("bad popup height")
+		return errors.New("invalid popup height - should be 100-2000")
+	}
+	if newConfig.UI.PopupWidth < 100 || newConfig.UI.PopupWidth > 2000 {
+		return errors.New("invalid popup width - should be 100-2000")
+	}
+
+	// check listen port
+	if newConfig.Server.Port < 1 || newConfig.Server.Port > 65535 {
+		return errors.New("invalid server listen port")
+	}
+
+	// check download path
+	fi, err := os.Stat(newConfig.Server.DownloadPath)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("path '%s' does not exist", newConfig.Server.DownloadPath)
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("path '%s' is not a directory", newConfig.Server.DownloadPath)
+	}
+
+	// check profile name uniqueness
+	for i, p1 := range newConfig.DownloadProfiles {
+		for j, p2 := range newConfig.DownloadProfiles {
+			if i != j && p1.Name == p2.Name {
+				return fmt.Errorf("duplicate download profile name '%s'", p1.Name)
+			}
+		}
+	}
+
+	// remove leading/trailing spaces from args and commands and check for emptiness
+	for i := range newConfig.DownloadProfiles {
+		newConfig.DownloadProfiles[i].Name = strings.TrimSpace(newConfig.DownloadProfiles[i].Name)
+
+		if newConfig.DownloadProfiles[i].Name == "" {
+			return errors.New("profile name cannot be empty")
+		}
+
+		newConfig.DownloadProfiles[i].Command = strings.TrimSpace(newConfig.DownloadProfiles[i].Command)
+		if newConfig.DownloadProfiles[i].Command == "" {
+			return fmt.Errorf("command in profile %s cannot be empty", newConfig.DownloadProfiles[i].Name)
+		}
+
+		// check the args
+		for j := range newConfig.DownloadProfiles[i].Args {
+			newConfig.DownloadProfiles[i].Args[j] = strings.TrimSpace(newConfig.DownloadProfiles[i].Args[j])
+			if newConfig.DownloadProfiles[i].Args[j] == "" {
+				return fmt.Errorf("argument %d of profile %s is empty", j+1, newConfig.DownloadProfiles[i].Name)
+			}
+		}
+
 	}
 
 	*c = newConfig
@@ -137,12 +192,14 @@ func (c *Config) WriteConfig() {
 	file, err := os.Create(
 		path,
 	)
+
 	if err != nil {
 		log.Fatalf("Could not open config file")
 	}
+	defer file.Close()
 
 	file.Write(s)
 	file.Close()
 
-	log.Printf("Stored in %s", path)
+	log.Printf("Wrote configuration out to %s", path)
 }

@@ -161,8 +161,8 @@ func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write(errorResB)
 			return
 		}
+		conf.WriteConfig()
 	}
-	conf.WriteConfig()
 	b, _ := json.Marshal(conf)
 	w.Write(b)
 }

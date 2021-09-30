@@ -3,18 +3,13 @@
 
 <div x-data="config()" x-init="fetch_config();">
 
-    <h2>gropple config</h2>
+    <p class="error" x-text="error_message"></p>
+    <p class="success" x-text="success_message"></p>
 
-    <p x-text="error_message"></p>
-
-    <p x-show="version && version.upgrade_available">
-        <a href="https://github.com/tardisx/gropple/releases">Upgrade is available</a> - 
-        you have 
-        <span x-text="version.current_version"></span> and 
-        <span x-text="version.github_version"></span>
-    is available.</p>
+    <p>Changes are not saved until "Save Changes" is pressed at the bottom of the page.</p>
 
     <div class="pure-g">
+
         <div class="pure-u-md-1-2 pure-u-1">
    
             <form class="pure-form pure-form-stacked gropple-config">
@@ -64,8 +59,12 @@
 
                     <template x-for="(profile, i) in config.profiles">
                         <div>
-                            <label x-bind:for="'config-profiles-'+i+'-name'">Name of profile <span x-text="i+1"></span></label>
+                            <label x-bind:for="'config-profiles-'+i+'-name'">Name of profile <span x-text="i+1"></span>
+                            </label>                                
+                            
                             <input type="text" x-bind:id="'config-profiles-'+i+'-name'" class="input-long" placeholder="name" x-model="profile.name" />
+                            <button class="pure-button button-del" href="#" @click.prevent="config.profiles.splice(i, 1);;">delete profile</button>
+
                             <span class="pure-form-message">The name of this profile. For your information only.</span>
 
                             <label x-bind:for="'config-profiles-'+i+'-command'">Command to run</label>
@@ -78,17 +77,18 @@
                             <template x-for="(arg, j) in profile.args">
                                 <div>
                                     <input type="text" x-bind:id="'config-profiles-'+i+'-arg-'+j" placeholder="arg" x-model="profile.args[j]" />
-                                    <button class="pure-button button-del" href="#" @click.prevent="profile.args.splice(j, 1);;">del</button>
+                                    <button class="pure-button button-del" href="#" @click.prevent="profile.args.splice(j, 1);;">delete arg</button>
                                 </div>
                             </template>
 
                             <button class="pure-button button-add" href="#" @click.prevent="profile.args.push('');">add arg</button>
 
-
                             <hr>
 
                         </div>
                     </template>
+
+                    <button class="pure-button button-add" href="#" @click.prevent="config.profiles.push({name: 'new profile', command: 'youtube-dl', args: []});">add profile</button>
 
                 </fieldset>
             </form>
@@ -110,8 +110,8 @@
     function config() {
         return { 
             config: { server : {}, ui : {}, profiles: [] }, 
-            version: {},
             error_message: '',
+            success_message: '',
 
             fetch_config() {
                 fetch('/rest/config')
@@ -124,7 +124,6 @@
                 });
             },
             save_config() {
-                console.log(this.config);
                 let op = {
                    method: 'POST',
                     body: JSON.stringify(this.config),
@@ -132,18 +131,22 @@
                 }
                 fetch('/rest/config', op)
                 .then(response => {
-                  if (response.status >= 200 && response.status <= 299) {
-                      return response.json();
-                  } else {
-                    throw Error(response);
-                  }})
-                .then(config => {
-                    console.log('fixing object');
-                    this.config = config;
+                    return response.json();
+                })
+                .then(response => {
+                    if (response.error) {
+                        this.error_message = response.error;
+                        this.success_message = '';
+                        document.body.scrollTop = document.documentElement.scrollTop = 0;
+                    } else {
+                        this.error_message = '';
+                        this.success_message = 'configuration saved';
+                        document.body.scrollTop = document.documentElement.scrollTop = 0;
+                        this.config = response;
+                    }
                 })
                 .catch(error => {
-                    this.error_message = error.error;
-                    console.log('failed to update config', error);
+                    console.log('exception' ,error);
                 });
             }
         }
