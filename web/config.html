@@ -15,9 +15,9 @@
     is available.</p>
 
     <div class="pure-g">
-        <div class="pure-u-md-1-2">
+        <div class="pure-u-md-1-2 pure-u-1">
    
-            <form class="pure-form pure-form-stacked">
+            <form class="pure-form pure-form-stacked gropple-config">
                 <fieldset>
 
                     <legend>Server</legend>
@@ -27,14 +27,14 @@
                     <span class="pure-form-message">The port the web server will listen on.</span>
 
                     <label for="config-server-address">Server address (URL)</label>
-                    <input type="text" id="config-server-address" placeholder="server address" x-model="config.server.address" />
+                    <input type="text" id="config-server-address" class="input-long" placeholder="server address" x-model="config.server.address" />
                     <span class="pure-form-message">
                         The address the service will be available on. Generally it will be http://hostname:port where
                         hostname is the host the server is running on, and port is the port you set above.
                     </span>
 
                     <label for="config-server-downloadpath">Download path</label>
-                    <input type="text" id="config-server-downloadpath" placeholder="path" x-model="config.server.download_path" />
+                    <input type="text" id="config-server-downloadpath" placeholder="path" class="input-long" x-model="config.server.download_path" />
                     <span class="pure-form-message">The path on the server to download files to.</span>
 
                     <legend>UI</legend>
@@ -51,33 +51,38 @@
             </form>
 
         </div>
-        <div class="pure-u-md-1-2">
-            <form class="pure-form ">
+        <div class="pure-u-md-1-2 pure-u-1">
+            <form class="pure-form gropple-config">
                 <fieldset>
 
                     <legend>Download Profiles</legend>
 
+                    <p>Gropple supports multiple download profiles. Each profile specifies a different youtube-dl 
+                        compatible command, and arguments. When starting a download, you may choose which profile 
+                        to use. The URL will be appended to the argument list at the end.
+                    </p>
+
                     <template x-for="(profile, i) in config.profiles">
                         <div>
                             <label x-bind:for="'config-profiles-'+i+'-name'">Name of profile <span x-text="i+1"></span></label>
-                            <input type="text" x-bind:id="'config-profiles-'+i+'-name'" placeholder="name" x-model="profile.name" />
+                            <input type="text" x-bind:id="'config-profiles-'+i+'-name'" class="input-long" placeholder="name" x-model="profile.name" />
                             <span class="pure-form-message">The name of this profile. For your information only.</span>
 
                             <label x-bind:for="'config-profiles-'+i+'-command'">Command to run</label>
-                            <input type="text" x-bind:id="'config-profiles-'+i+'-command'" placeholder="name" x-model="profile.command" />
-                            <span class="pure-form-message">Which command to run.</span>
+                            <input type="text" x-bind:id="'config-profiles-'+i+'-command'" class="input-long" placeholder="name" x-model="profile.command" />
+                            <span class="pure-form-message">Which command to run. Your path will be searched, or you can specify the full path here.</span>
 
 
-                            <label>Args</label>
+                            <label>Arguments</label>
 
                             <template x-for="(arg, j) in profile.args">
                                 <div>
                                     <input type="text" x-bind:id="'config-profiles-'+i+'-arg-'+j" placeholder="arg" x-model="profile.args[j]" />
-                                    <button class="pure-button" href="#" @click.prevent="profile.args.splice(j, 1);;">del</button>
+                                    <button class="pure-button button-del" href="#" @click.prevent="profile.args.splice(j, 1);;">del</button>
                                 </div>
                             </template>
 
-                            <button class="pure-button" href="#" @click.prevent="profile.args.push('');">add arg</button>
+                            <button class="pure-button button-add" href="#" @click.prevent="profile.args.push('');">add arg</button>
 
 
                             <hr>
@@ -91,7 +96,7 @@
     </div>
     <div class="pure-g">
         <div class="pure-u-1">
-            <button class="pure-button" @click="save_config();" href="#">Save Config</button>
+            <button class="pure-button pure-button-primary" @click="save_config();" href="#">Save Config</button>
         </div>
     </div>
 
