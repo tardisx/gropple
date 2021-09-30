@@ -8,41 +8,35 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os/exec"
-	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/tardisx/gropple/config"
+	"github.com/tardisx/gropple/download"
 	"github.com/tardisx/gropple/version"
 )
 
-type download struct {
-	Id       int      `json:"id"`
-	Url      string   `json:"url"`
-	Pid      int      `json:"pid"`
-	ExitCode int      `json:"exit_code"`
-	State    string   `json:"state"`
-	Finished bool     `json:"finished"`
-	Files    []string `json:"files"`
-	Eta      string   `json:"eta"`
-	Percent  float32  `json:"percent"`
-	Log      []string `json:"log"`
-}
-
-var downloads []*download
+var downloads []*download.Download
 var downloadId = 0
+var conf *config.Config
 
 var versionInfo = version.Info{CurrentVersion: "v0.5.0"}
 
 //go:embed web
 var webFS embed.FS
 
-var conf *config.Config
+type successResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+type errorResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
+}
 
 func main() {
 	if !config.ConfigFileExists() {
@@ -58,14 +52,16 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", HomeHandler)
-	r.HandleFunc("/config", ConfigHandler)
-	r.HandleFunc("/fetch", FetchHandler)
+	r.HandleFunc("/", homeHandler)
+	r.HandleFunc("/config", configHandler)
+	r.HandleFunc("/fetch", fetchHandler)
 
-	r.HandleFunc("/rest/fetch/info", FetchInfoHandler)
-	r.HandleFunc("/rest/fetch/info/{id}", FetchInfoOneHandler)
-	r.HandleFunc("/rest/version", VersionHandler)
-	r.HandleFunc("/rest/config", ConfigRESTHandler)
+	// info for the list
+	r.HandleFunc("/rest/fetch", fetchInfoRESTHandler)
+	// info for one, including update
+	r.HandleFunc("/rest/fetch/{id}", fetchInfoOneRESTHandler)
+	r.HandleFunc("/rest/version", versionRESTHandler)
+	r.HandleFunc("/rest/config", configRESTHandler)
 
 	http.Handle("/", r)
 
@@ -90,7 +86,8 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func VersionHandler(w http.ResponseWriter, r *http.Request) {
+// versionRESTHandler returns the version information, if we have up-to-date info from github
+func versionRESTHandler(w http.ResponseWriter, r *http.Request) {
 	if versionInfo.GithubVersionFetched {
 		b, _ := json.Marshal(versionInfo)
 		w.Write(b)
@@ -99,7 +96,8 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
+// homeHandler returns the main index page
+func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=%d,height=%d'));", conf.Server.Address, conf.UI.PopupWidth, conf.UI.PopupHeight)
@@ -110,7 +108,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Info struct {
-		Downloads      []*download
+		Downloads      []*download.Download
 		BookmarkletURL template.URL
 	}
 
@@ -123,10 +121,10 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
-func ConfigHandler(w http.ResponseWriter, r *http.Request) {
+// configHandler returns the configuration page
+func configHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/menu.tmpl", "web/config.html")
@@ -140,11 +138,8 @@ func ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
-
-	type errorResponse struct {
-		Error string `json:"error"`
-	}
+// configRESTHandler handles both reading and writing of the configuration
+func configRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		log.Printf("Updating config")
@@ -155,7 +150,7 @@ func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
 		err = conf.UpdateFromJSON(b)
 
 		if err != nil {
-			errorRes := errorResponse{Error: err.Error()}
+			errorRes := errorResponse{Success: false, Error: err.Error()}
 			errorResB, _ := json.Marshal(errorRes)
 			w.WriteHeader(400)
 			w.Write(errorResB)
@@ -167,7 +162,8 @@ func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func FetchInfoOneHandler(w http.ResponseWriter, r *http.Request) {
+//
+func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idString := vars["id"]
 	if idString != "" {
@@ -177,24 +173,74 @@ func FetchInfoOneHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// find the download
+		var thisDownload *download.Download
 		for _, dl := range downloads {
 			if dl.Id == id {
-				b, _ := json.Marshal(dl)
-				w.Write(b)
+				thisDownload = dl
+			}
+		}
+		if thisDownload == nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		if r.Method == "POST" {
+			log.Printf("Updating download")
+
+			type updateRequest struct {
+				Action  string `json:"action"`
+				Profile string `json:"profile"`
+			}
+
+			thisReq := updateRequest{}
+
+			b, err := io.ReadAll(r.Body)
+			if err != nil {
+				panic(err)
+			}
+
+			err = json.Unmarshal(b, &thisReq)
+			if err != nil {
+				errorRes := errorResponse{Success: false, Error: err.Error()}
+				errorResB, _ := json.Marshal(errorRes)
+				w.WriteHeader(400)
+				w.Write(errorResB)
+				return
+			}
+
+			if thisReq.Action == "start" {
+				// find the profile they asked for
+				profile := conf.ProfileCalled(thisReq.Profile)
+				if profile == nil {
+					panic("bad profile name?")
+				}
+				// set the profile
+				thisDownload.DownloadProfile = *profile
+
+				go func() { thisDownload.Begin() }()
+				succRes := successResponse{Success: true, Message: "download started"}
+				succResB, _ := json.Marshal(succRes)
+				w.Write(succResB)
 				return
 			}
 		}
+
+		// just a get, return the object
+		b, _ := json.Marshal(thisDownload)
+		w.Write(b)
+		return
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func FetchInfoHandler(w http.ResponseWriter, r *http.Request) {
+func fetchInfoRESTHandler(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(downloads)
 	w.Write(b)
 }
 
-func FetchHandler(w http.ResponseWriter, r *http.Request) {
+func fetchHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 	url, present := query["url"]
@@ -215,10 +261,12 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 		// create the record
 		// XXX should be atomic!
 		downloadId++
-		newDownload := download{
+		newDownload := download.Download{
+			Config: conf,
+
 			Id:       downloadId,
 			Url:      url[0],
-			State:    "starting",
+			State:    "choose profile",
 			Finished: false,
 			Eta:      "?",
 			Percent:  0.0,
@@ -229,160 +277,20 @@ func FetchHandler(w http.ResponseWriter, r *http.Request) {
 
 		newDownload.Log = append(newDownload.Log, "start of log...")
 
-		go func() {
-			queue(&newDownload)
-		}()
+		// go func() {
+		// 	newDownload.Begin()
+		// }()
 
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
 		}
-		err = t.ExecuteTemplate(w, "layout", newDownload)
+
+		templateData := map[string]interface{}{"dl": newDownload, "config": conf}
+
+		err = t.ExecuteTemplate(w, "layout", templateData)
 		if err != nil {
 			panic(err)
 		}
 	}
-}
-
-func queue(dl *download) {
-	cmdSlice := []string{}
-	cmdSlice = append(cmdSlice, conf.DownloadProfiles[0].Args...)
-	cmdSlice = append(cmdSlice, dl.Url)
-
-	cmd := exec.Command(conf.DownloadProfiles[0].Command, cmdSlice...)
-	cmd.Dir = conf.Server.DownloadPath
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		dl.State = "failed"
-		dl.Finished = true
-		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stdout pipe: %v", err))
-		return
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		dl.State = "failed"
-		dl.Finished = true
-		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stderr pipe: %v", err))
-		return
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		dl.State = "failed"
-		dl.Finished = true
-		dl.Log = append(dl.Log, fmt.Sprintf("error starting youtube-dl: %v", err))
-		return
-	}
-	dl.Pid = cmd.Process.Pid
-
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		updateDownload(stdout, dl)
-	}()
-
-	go func() {
-		defer wg.Done()
-		updateDownload(stderr, dl)
-	}()
-
-	wg.Wait()
-	cmd.Wait()
-
-	dl.State = "complete"
-	dl.Finished = true
-	dl.ExitCode = cmd.ProcessState.ExitCode()
-
-	if dl.ExitCode != 0 {
-		dl.State = "failed"
-	}
-
-}
-
-func updateDownload(r io.Reader, dl *download) {
-	// XXX not sure if we might get a partial line?
-	buf := make([]byte, 1024)
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			s := string(buf[:n])
-			lines := strings.Split(s, "\n")
-
-			for _, l := range lines {
-
-				if l == "" {
-					continue
-				}
-
-				// append the raw log
-				dl.Log = append(dl.Log, l)
-
-				// look for the percent and eta and other metadata
-				updateMetadata(dl, l)
-			}
-		}
-		if err != nil {
-			break
-		}
-	}
-}
-
-func updateMetadata(dl *download, s string) {
-
-	// [download]  49.7% of ~15.72MiB at  5.83MiB/s ETA 00:07
-	etaRE := regexp.MustCompile(`download.+ETA +(\d\d:\d\d)`)
-	matches := etaRE.FindStringSubmatch(s)
-	if len(matches) == 2 {
-		dl.Eta = matches[1]
-		dl.State = "downloading"
-
-	}
-
-	percentRE := regexp.MustCompile(`download.+?([\d\.]+)%`)
-	matches = percentRE.FindStringSubmatch(s)
-	if len(matches) == 2 {
-		p, err := strconv.ParseFloat(matches[1], 32)
-		if err == nil {
-			dl.Percent = float32(p)
-		} else {
-			panic(err)
-		}
-	}
-
-	// This appears once per destination file
-	// [download] Destination: Filename with spaces and other punctuation here be careful!.mp4
-	filename := regexp.MustCompile(`download.+?Destination: (.+)$`)
-	matches = filename.FindStringSubmatch(s)
-	if len(matches) == 2 {
-		dl.Files = append(dl.Files, matches[1])
-	}
-
-	// This means a file has been "created" by merging others
-	// [ffmpeg] Merging formats into "Toto - Africa (Official HD Video)-FTQbiNvZqaY.mp4"
-	mergedFilename := regexp.MustCompile(`Merging formats into "(.+)"$`)
-	matches = mergedFilename.FindStringSubmatch(s)
-	if len(matches) == 2 {
-		dl.Files = append(dl.Files, matches[1])
-	}
-
-	// This means a file has been deleted
-	// Gross - this time it's unquoted and has trailing guff
-	// Deleting original file Toto - Africa (Official HD Video)-FTQbiNvZqaY.f137.mp4 (pass -k to keep)
-	// This is very fragile
-	deletedFile := regexp.MustCompile(`Deleting original file (.+) \(pass -k to keep\)$`)
-	matches = deletedFile.FindStringSubmatch(s)
-	if len(matches) == 2 {
-		// find the index
-		for i, f := range dl.Files {
-			if f == matches[1] {
-				dl.Files = append(dl.Files[:i], dl.Files[i+1:]...)
-				break
-			}
-		}
-	}
-
 }

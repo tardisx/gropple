@@ -65,6 +65,15 @@ func DefaultConfig() *Config {
 	return &defaultConfig
 }
 
+func (c *Config) ProfileCalled(name string) *DownloadProfile {
+	for _, p := range c.DownloadProfiles {
+		if p.Name == name {
+			return &p
+		}
+	}
+	return nil
+}
+
 func (c *Config) UpdateFromJSON(j []byte) error {
 	newConfig := Config{}
 	err := json.Unmarshal(j, &newConfig)

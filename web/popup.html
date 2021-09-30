@@ -1,8 +1,19 @@
 {{ define "content" }}
-    <div id="layout" class="pure-g pure-u-1" x-data="popup()"  x-init="fetch_data()">
+    <div id="layout" class="pure-g pure-u-1" x-data="popup()" x-init="fetch_data()">
         <h2>Download started</h2>
-        <p>Fetching <tt>{{ .Url }}</tt></p>
+        <p>Fetching <tt>{{ .dl.Url }}</tt></p>
         <table class="pure-table" >
+            <tr>
+                <th>profile</th>
+                <td>
+                    <select x-bind:disabled="profile_chosen" x-on:change="update_profile()" class="pure-input-1-2" x-model="profile_chosen">
+                        <option value="">choose a profile to start</option>
+                    {{ range $i := .config.DownloadProfiles }}
+                        <option>{{ $i.Name }}</option>
+                    {{ end }}
+                    </select>
+                </td>
+            </tr>
             <tr><th>current filename</th><td x-text="filename"></td></tr>
             <tr><th>state</th><td x-text="state"></td></tr>
             <tr><th>progress</th><td x-text="percent"></td></tr>
@@ -21,8 +32,26 @@
     function popup() {
         return { 
             eta: '', percent: 0.0, state: '??', filename: '', finished: false, log :'',
+            profile_chosen: null,
+            watch_profile() {
+                console.log('will wtch profile');
+                this.$watch('profile_chosen', value => this.profile_chosen(value))
+            },
+            update_profile(name) {
+                console.log('you chose name', this.profile_chosen);
+                let op = {
+                   method: 'POST',
+                   body: JSON.stringify({action: 'start', profile: this.profile_chosen}),
+                   headers: { 'Content-Type': 'application/json' }
+                };
+                fetch('/rest/fetch/{{ .dl.Id }}', op)
+                .then(response => response.json())
+                .then(info => {
+                    console.log(info)
+                })
+            },
             fetch_data() {
-                fetch('/rest/fetch/info/{{ .Id }}')
+                fetch('/rest/fetch/{{ .dl.Id }}')
                 .then(response => response.json())
                 .then(info => {
                     this.eta = info.eta;

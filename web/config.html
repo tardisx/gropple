@@ -131,9 +131,9 @@
             save_config() {
                 let op = {
                    method: 'POST',
-                    body: JSON.stringify(this.config),
-                    headers: { 'Content-Type': 'application/json' }
-                }
+                   body: JSON.stringify(this.config),
+                   headers: { 'Content-Type': 'application/json' }
+                };
                 fetch('/rest/config', op)
                 .then(response => {
                     return response.json();
