@@ -113,14 +113,14 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 
 		newConfig.DownloadProfiles[i].Command = strings.TrimSpace(newConfig.DownloadProfiles[i].Command)
 		if newConfig.DownloadProfiles[i].Command == "" {
-			return fmt.Errorf("command in profile %s cannot be empty", newConfig.DownloadProfiles[i].Name)
+			return fmt.Errorf("command in profile '%s' cannot be empty", newConfig.DownloadProfiles[i].Name)
 		}
 
 		// check the args
 		for j := range newConfig.DownloadProfiles[i].Args {
 			newConfig.DownloadProfiles[i].Args[j] = strings.TrimSpace(newConfig.DownloadProfiles[i].Args[j])
 			if newConfig.DownloadProfiles[i].Args[j] == "" {
-				return fmt.Errorf("argument %d of profile %s is empty", j+1, newConfig.DownloadProfiles[i].Name)
+				return fmt.Errorf("argument %d of profile '%s' is empty", j+1, newConfig.DownloadProfiles[i].Name)
 			}
 		}
 
