@@ -45,7 +45,17 @@ var webFS embed.FS
 var conf *config.Config
 
 func main() {
-	conf = config.DefaultConfig()
+	if !config.ConfigFileExists() {
+		log.Print("No config file - creating default config")
+		conf = config.DefaultConfig()
+		conf.WriteConfig()
+	} else {
+		loadedConfig, err := config.LoadConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+		conf = loadedConfig
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
@@ -152,7 +162,7 @@ func ConfigRESTHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
+	conf.WriteConfig()
 	b, _ := json.Marshal(conf)
 	w.Write(b)
 }

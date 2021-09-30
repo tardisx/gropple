@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -26,10 +27,10 @@ type UI struct {
 }
 
 type Config struct {
+	ConfigVersion    int               `yaml:"config_version" json:"config_version"`
 	Server           Server            `yaml:"server" json:"server"`
 	UI               UI                `yaml:"ui" json:"ui"`
 	DownloadProfiles []DownloadProfile `yaml:"profiles" json:"profiles"`
-	ConfigVersion    int               `yaml:"config_version" json:"config_version"`
 }
 
 func DefaultConfig() *Config {
@@ -74,11 +75,74 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 	return nil
 }
 
-func WriteDefaultConfig(path string) {
-	defaultConfig := DefaultConfig()
-	s, err := yaml.Marshal(&defaultConfig)
+func configPath() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatalf("cannot find a directory to store config: %v", err)
+	}
+	appDir := "gropple"
+
+	fullPath := dir + string(os.PathSeparator) + appDir
+	_, err = os.Stat(fullPath)
+
+	if os.IsNotExist(err) {
+		err := os.Mkdir(fullPath, 0777)
+		if err != nil {
+			log.Fatalf("Could not create config dir '%s': %v", fullPath, err)
+		}
+	}
+
+	fullFilename := fullPath + string(os.PathSeparator) + "config.yml"
+	return fullFilename
+}
+
+func ConfigFileExists() bool {
+	info, err := os.Stat(configPath())
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	if info.Size() == 0 {
+		log.Print("config file is 0 bytes?")
+		return false
+	}
+	return true
+}
+
+func LoadConfig() (*Config, error) {
+	path := configPath()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("Could not read config '%s': %v", path, err)
+		return nil, err
+	}
+	c := Config{}
+	err = yaml.Unmarshal(b, &c)
+	if err != nil {
+		log.Printf("Could not parse YAML config '%s': %v", path, err)
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (c *Config) WriteConfig() {
+	s, err := yaml.Marshal(c)
 	if err != nil {
 		panic(err)
 	}
-	log.Print(string(s))
+
+	path := configPath()
+	file, err := os.Create(
+		path,
+	)
+	if err != nil {
+		log.Fatalf("Could not open config file")
+	}
+
+	file.Write(s)
+	file.Close()
+
+	log.Printf("Stored in %s", path)
 }
