@@ -7,7 +7,7 @@
     <p class="error"  x-show="error_message"  x-transition.duration.500ms x-text="error_message"></p>
     <p class="success" x-show="success_message" x-transition.duration.500ms x-text="success_message"></p>
 
-    <p>Changes are not saved until "Save Changes" is pressed at the bottom of the page.</p>
+    <p>Note: changes are not saved until the "Save Config" button is pressed at the bottom of the page.</p>
 
     <div class="pure-g">
 
@@ -35,6 +35,8 @@
 
                     <legend>UI</legend>
 
+                    <p>Note that changes to the popup dimensions will require you to recreate your bookmarklet.</p>
+
                     <label for="config-ui-popupwidth">Popup Width</label>
                     <input type="text" id="config-ui-popupwidth" placeholder="width in pixels" x-model.number="config.ui.popup_width" />
                     <span class="pure-form-message">The width of popup windows in pixels.</span>
@@ -57,6 +59,8 @@
                         compatible command, and arguments. When starting a download, you may choose which profile 
                         to use. The URL will be appended to the argument list at the end.
                     </p>
+
+                    <hr>
 
                     <template x-for="(profile, i) in config.profiles">
                         <div>
