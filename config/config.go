@@ -44,9 +44,10 @@ func DefaultConfig() *Config {
 		"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
 	}}
 	mp3Profile := DownloadProfile{Name: "standard mp3", Command: "youtube-dl", Args: []string{
-		"–extract-audio",
+		"--newline",
+		"--write-info-json",
+		"--extract-audio",
 		"--audio-format", "mp3",
-		"--prefer-ffmpeg",
 	}}
 
 	defaultConfig.DownloadProfiles = append(defaultConfig.DownloadProfiles, stdProfile)
