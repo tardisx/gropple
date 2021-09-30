@@ -186,7 +186,6 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if r.Method == "POST" {
-			log.Printf("Updating download")
 
 			type updateRequest struct {
 				Action  string `json:"action"`
