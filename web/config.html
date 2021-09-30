@@ -3,8 +3,8 @@
 
 <div x-data="config()" x-init="fetch_config();">
 
-    <p class="error" x-text="error_message"></p>
-    <p class="success" x-text="success_message"></p>
+    <p class="error"  x-show="error_message"  x-transition.duration.500ms x-text="error_message"></p>
+    <p class="success" x-show="success_message" x-transition.duration.500ms x-text="success_message"></p>
 
     <p>Changes are not saved until "Save Changes" is pressed at the bottom of the page.</p>
 
