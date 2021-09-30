@@ -104,7 +104,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=%d,height=%d'));", conf.Server.Address, conf.UI.PopupWidth, conf.UI.PopupHeight)
 
-	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/index.html")
+	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/menu.tmpl", "web/index.html")
 	if err != nil {
 		panic(err)
 	}
@@ -129,7 +129,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 func ConfigHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
-	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/config.html")
+	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/menu.tmpl", "web/config.html")
 	if err != nil {
 		panic(err)
 	}

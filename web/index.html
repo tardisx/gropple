@@ -1,5 +1,7 @@
 {{ define "content" }}
 
+{{ template "menu.tmpl" . }}
+
 
 <div x-data="index()" x-init="fetch_data(); fetch_version()">
 
