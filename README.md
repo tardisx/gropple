@@ -1,14 +1,14 @@
 # gropple
 
-A web service and bookmarklet to download videos with a single click.
+A frontend to youtube-dl (and forks) to download videos with a single click, straight from your web browser.
 
 ![Screencast](/screencast.gif)
 
 ## Pre-requisites
 
-* a passing familiarity with the command line
+* some familiarity with the command line
 * youtube-dl (plus any of its required dependencies, like ffmpeg)
-* golang compiler (if you'd like to build from source)
+* golang compiler (only if you'd like to build from source)
 
 ## Build
 
@@ -18,62 +18,70 @@ A web service and bookmarklet to download videos with a single click.
 
 Binaries are available at https://github.com/tardisx/gropple/releases
 
+Gropple will automatically check for available updates and prompt you to upgrade.
+
 ## Running
 
-    gropple -port 6283 -address http://hostname:6283 -path /downloads
+    ./gropple
 
-With no arguments, it will listen on port 6283 and use an address of 'http://localhost:6283'.
+There are no command line arguments. All configuration is done via the web
+interface. The address will be printed after startup:
 
-The address must be specified so that the bookmarklet can refer to the correct
-host if it is not running on your local machine. You may also need to specify
-a different address if you are running it behind a proxy server or similar.
+    2021/09/30 23:53:00 starting gropple v0.5.0 - https://github.com/tardisx/gropple
+    2021/09/30 23:53:00 go to http://localhost:6123 for details on installing the bookmarklet and to check status
 
 ## Using
 
-Bring up `http://localhost:6283` (or your chosen address) in your browser. You 
+Bring up `http://localhost:6283` (or your configured address) in your browser. You 
 should see a link to the bookmarklet at the top of the screen, and the list of
 downloads (currently empty).
 
 Drag the bookmarklet to your favourites bar, or otherwise bookmark it as you 
-see fit.
+see fit. Any kind of browser bookmark should work. The bookmarklet contains
+embedded javascript to pass the URL of whatever page you are currently on back
+to gropple.
 
-Whenever you are on a page with a video you would like to download, simply 
+So, whenever you are on a page with a video you would like to download just 
 click the bookmarklet.
 
-A popup window will appear, the download will start on the your gropple server 
-and the status will be shown in the window.
+A popup window will appear. Choose a download profile and the download will start.
+The status will be shown in the window, updating in real time.
 
 You may close this window at any time without stopping the download, the status 
 of all downloads is available on the index page.
 
-## Using an alternative downloader
+## Configuration
 
-The default downloader is youtube-dl. It is possible to use a different downloader 
-via the `-dl-cmd` command line option.
+Click the "config" link on the index page to configure gropple. The default options 
+are fine if you are running on your local machine. If you are running it remotely
+you will need to set the "server address" to ensure the bookmarklet has the correct
+URL in it.
 
-While `gropple` will use your `PATH` to find the executable, you may also want 
-to specify a full path instead.
+### Configuring Downloaders
 
-So, for instance, to use `youtube-dlc` instead of `youtube-dl` and specify the 
-full path:
+Gropple's default configuration uses the original youtube-dl and has two profiles set
+up, one for downloading video, the other for downloading audio (mp3).
 
-`gropple -dl-cmd /home/username/bin/youtube-dlc`
+Note that gropple does not include any downloaders, you have to install them separately.
 
-Note that this is only the path to the executable. If you need to change the 
-command arguments, see below.
+If you would like to use a youtube-dl fork (like [yt-dlp](https://github.com/yt-dlp/yt-dlp))
+or change the options, you can do so on the right hand side. Create as many profiles as you 
+wish, whenever you start a download you can choose the appropriate profile.
 
-## Changing the youtube-dl arguments
+Note that the command arguments must each be specified separately - see the default configuration
+for an example.
 
-The default arguments passed to `youtube-dl` are:
+While gropple will use your `PATH` to find the executable, you can also specify a full path
+instead. Note that any tools that the downloader calls itself (for instance, ffmpeg) will 
+probably need to be available on your path.
 
-* `--newline` (needed to allow gropple to properly parse the output)
-* `--write-info-json` (optional, but provides information on the download in the corresponding .json file)
-* `-f` and `bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best` (choose the type of video `youtube-dl` will download)
+## Problems
 
-These are customisable on the command line for `gropple`. For example, to duplicate these default options, you would 
-do:
+Most download problems are probably diagnosable via the log - check in the popup window and scroll
+the log down to the bottom. The most common problem is that youtube-dl cannot be found, or its
+dependency (like ffmpeg) cannot be found on your path. 
 
-`gropple -dl-args '--newline' -dl-args '--write-info-json' -dl-args '-f' -dl-args 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best`
+For other problems, please file an issue on github.
 
 ## TODO
 

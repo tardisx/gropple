@@ -1,10 +1,16 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Configuration moved from command line to an app-managed YAML file
-- Configuration via web interface
+## [v0.5.0] - 2021-10-01
+
+- No more command line options, all configuration is now app-managed
+- Beautiful (ok, less ugly) new web interface
+- Multiple youtube-dl profiles, a profile can be chosen for each download
+- Bundled profiles include a standard video download and an mp3 download
+- Configuration via web interface, including download profile configuration
 
 ## [v0.4.0] - 2021-09-26
 
