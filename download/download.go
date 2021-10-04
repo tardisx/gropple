@@ -119,7 +119,7 @@ func (dl *Download) updateDownload(r io.Reader) {
 func (dl *Download) updateMetadata(s string) {
 
 	// [download]  49.7% of ~15.72MiB at  5.83MiB/s ETA 00:07
-	etaRE := regexp.MustCompile(`download.+ETA +(\d\d:\d\d)`)
+	etaRE := regexp.MustCompile(`download.+ETA +(\d\d:\d\d(?::\d\d)?)$`)
 	matches := etaRE.FindStringSubmatch(s)
 	if len(matches) == 2 {
 		dl.Eta = matches[1]
