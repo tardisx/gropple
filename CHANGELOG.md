@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Add note about adblockers potentially blocking the popup
+
 ## [v0.5.0] - 2021-10-01
 
 - No more command line options, all configuration is now app-managed
