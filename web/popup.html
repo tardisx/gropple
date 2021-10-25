@@ -30,11 +30,11 @@
 {{ define "js" }}
 <script>
     function popup() {
+        history.replaceState(null, '', ['/fetch/{{ .dl.Id }}'])
         return { 
             eta: '', percent: 0.0, state: '??', filename: '', finished: false, log :'',
             profile_chosen: null,
             watch_profile() {
-                console.log('will wtch profile');
                 this.$watch('profile_chosen', value => this.profile_chosen(value))
             },
             update_profile(name) {
@@ -57,6 +57,9 @@
                     this.eta = info.eta;
                     this.percent = info.percent + "%";
                     this.state = info.state;
+                    if (this.state != 'choose profile') {
+                        this.profile_chosen = true;
+                    }
                     this.finished = info.finished;
                     if (info.files && info.files.length > 0) {
                         this.filename = info.files[info.files.length - 1];

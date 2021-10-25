@@ -55,6 +55,7 @@ func main() {
 	r.HandleFunc("/", homeHandler)
 	r.HandleFunc("/config", configHandler)
 	r.HandleFunc("/fetch", fetchHandler)
+	r.HandleFunc("/fetch/{id}", fetchHandler)
 
 	// info for the list
 	r.HandleFunc("/rest/fetch", fetchInfoRESTHandler)
@@ -240,6 +241,32 @@ func fetchInfoRESTHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchHandler(w http.ResponseWriter, r *http.Request) {
+
+	// if they refreshed the popup, just load the existing object, don't
+	// create a new one
+	vars := mux.Vars(r)
+	idString := vars["id"]
+
+	idInt, err := strconv.ParseInt(idString, 10, 32)
+	if err == nil && idInt > 0 {
+		for _, dl := range downloads {
+			if dl.Id == int(idInt) {
+				t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
+				if err != nil {
+					panic(err)
+				}
+
+				templateData := map[string]interface{}{"dl": dl, "config": conf}
+
+				err = t.ExecuteTemplate(w, "layout", templateData)
+				if err != nil {
+					panic(err)
+				}
+				return
+			}
+		}
+
+	}
 
 	query := r.URL.Query()
 	url, present := query["url"]
