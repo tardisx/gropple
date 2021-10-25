@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.5.1] - 2021-10-25
+
 - Add note about adblockers potentially blocking the popup
+- Make it possible to refresh the popup window without initating a new download
 
 ## [v0.5.0] - 2021-10-01
 
