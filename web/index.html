@@ -2,7 +2,6 @@
 
 {{ template "menu.tmpl" . }}
 
-
 <div x-data="index()" x-init="fetch_data(); fetch_version()">
 
     <p x-cloak x-show="version && version.upgrade_available">
@@ -25,7 +24,7 @@
     <table class="pure-table">
         <thead>
             <tr>
-                <th>id</th><th>filename</th><th>url</th><th>state</th><th>percent</th><th>eta</th><th>finished</th>
+		    <th>id</th><th>filename</th><th>url</th><th>show</th><th>state</th><th>percent</th><th>eta</th><th>finished</th>
             </tr>
         </thead>
         <tbody>
@@ -33,11 +32,12 @@
                 <tr>
                     <td x-text="item.id"></td>
                     <td x-text="item.files"></td>
-                    <td><a x-bind:href="item.url">link</a></td>
-                    <td x-text="item.state"></td>
+                    <td><a class="int-link" x-bind:href="item.url">&#x2197;</a></td>
+                    <td><a class="int-link" @click="show_popup(item)" href="#">&#x1F4C4;</a></td>
+                    <td :class="'state-'+item.state" x-text="item.state"></td>
                     <td x-text="item.percent"></td>
                     <td x-text="item.eta"></td>
-                    <td x-text="item.finished"></td>
+                    <td x-text="item.finished ? '&#x2714;' : '-'"></td>
                 </tr>
     
             </template>
@@ -78,6 +78,9 @@
                     setTimeout(() => { this.fetch_data() }, 1000);
                 })
             },
+            show_popup(item) {
+			    window.open(item.popup_url, item.id, "width={{ .Config.UI.PopupWidth }},height={{ .Config.UI.PopupHeight }}");
+	    },
         }
     }
 </script>

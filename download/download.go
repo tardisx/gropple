@@ -15,6 +15,7 @@ import (
 type Download struct {
 	Id              int                    `json:"id"`
 	Url             string                 `json:"url"`
+	PopupUrl        string                 `json:"popup_url"`
 	Pid             int                    `json:"pid"`
 	ExitCode        int                    `json:"exit_code"`
 	State           string                 `json:"state"`

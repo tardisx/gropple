@@ -23,7 +23,7 @@ var downloads []*download.Download
 var downloadId = 0
 var conf *config.Config
 
-var versionInfo = version.Info{CurrentVersion: "v0.5.1"}
+var versionInfo = version.Info{CurrentVersion: "v0.5.2"}
 
 //go:embed web
 var webFS embed.FS
@@ -111,11 +111,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	type Info struct {
 		Downloads      []*download.Download
 		BookmarkletURL template.URL
+		Config         *config.Config
 	}
 
 	info := Info{
 		Downloads:      downloads,
 		BookmarkletURL: template.URL(bookmarkletURL),
+		Config:         conf,
 	}
 
 	err = t.ExecuteTemplate(w, "layout", info)
@@ -292,6 +294,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 
 			Id:       downloadId,
 			Url:      url[0],
+			PopupUrl: fmt.Sprintf("/fetch/%d", downloadId),
 			State:    "choose profile",
 			Finished: false,
 			Eta:      "?",

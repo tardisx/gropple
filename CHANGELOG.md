@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.5.2] - 2021-10-26
+
+- Provide link to re-display the popup window from the index
+- Visual improvements
+
 ## [v0.5.1] - 2021-10-25
 
 - Add note about adblockers potentially blocking the popup
