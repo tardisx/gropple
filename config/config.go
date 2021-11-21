@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -145,6 +146,12 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 			if newConfig.DownloadProfiles[i].Args[j] == "" {
 				return fmt.Errorf("argument %d of profile '%s' is empty", j+1, newConfig.DownloadProfiles[i].Name)
 			}
+		}
+
+		// check the command exists
+		_, err := exec.LookPath(newConfig.DownloadProfiles[i].Command)
+		if err != nil {
+			return fmt.Errorf("Could not find %s on the path", newConfig.DownloadProfiles[i].Command)
 		}
 
 	}

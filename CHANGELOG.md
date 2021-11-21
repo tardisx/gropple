@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Check the chosen command exists when configuring a profile
+
 ## [v0.5.3] - 2021-11-21
 
 - Add config option to limit number of simultaneous downloads
