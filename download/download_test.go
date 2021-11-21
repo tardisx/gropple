@@ -65,8 +65,6 @@ func TestUpdateMetadata(t *testing.T) {
 // [download] 100% of 4.64MiB in 00:00
 // [ffmpeg] Merging formats into "Halo Infinite Flight 4K Gameplay-wi7Agv1M6PY.mp4"
 
-// This test is a bit broken, because StartQueued immediately starts the queued
-// download, it
 func TestQueue(t *testing.T) {
 	conf := config.TestConfig()
 
@@ -93,7 +91,6 @@ func TestQueue(t *testing.T) {
 	dls.StartQueued(2)
 	if dls[1].State == "queued" {
 		t.Error("#2 was not started but it should be")
-
 	}
 
 }
