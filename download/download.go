@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/tardisx/gropple/config"
 )
@@ -21,6 +22,7 @@ type Download struct {
 	State           string                 `json:"state"`
 	DownloadProfile config.DownloadProfile `json:"download_profile"`
 	Finished        bool                   `json:"finished"`
+	FinishedTS      time.Time              `json:"finished_ts"`
 	Files           []string               `json:"files"`
 	Eta             string                 `json:"eta"`
 	Percent         float32                `json:"percent"`
@@ -28,12 +30,66 @@ type Download struct {
 	Config          *config.Config
 }
 
+type Downloads []*Download
+
+// StartQueued starts any downloads that have been queued, we would not exceed
+// maxRunning. If maxRunning is 0, there is no limit.
+func (dls Downloads) StartQueued(maxRunning int) {
+	active := 0
+	queued := 0
+
+	for _, dl := range dls {
+		if dl.State == "downloading" {
+			active++
+		}
+		if dl.State == "queued" {
+			queued++
+		}
+	}
+
+	// there is room, so start one
+	if queued > 0 && (active < maxRunning || maxRunning == 0) {
+		for _, dl := range dls {
+			if dl.State == "queued" {
+				dl.State = "downloading"
+				go func() { dl.Begin() }()
+				return
+			}
+		}
+	}
+
+}
+
+// Cleanup removes old downloads from the list. Hardcoded to remove them one hour
+// completion.
+func (dls Downloads) Cleanup() Downloads {
+	newDLs := Downloads{}
+	for _, dl := range dls {
+		if dl.Finished && time.Since(dl.FinishedTS) > time.Duration(time.Hour) {
+			// do nothing
+		} else {
+			newDLs = append(newDLs, dl)
+		}
+	}
+	return newDLs
+}
+
+// Queue queues a download
+func (dl *Download) Queue() {
+	dl.State = "queued"
+}
+
 // Begin starts a download, by starting the command specified in the DownloadProfile.
 // It blocks until the download is complete.
 func (dl *Download) Begin() {
+	dl.State = "downloading"
 	cmdSlice := []string{}
 	cmdSlice = append(cmdSlice, dl.DownloadProfile.Args...)
-	cmdSlice = append(cmdSlice, dl.Url)
+
+	// only add the url if it's not empty. This helps us with testing
+	if dl.Url != "" {
+		cmdSlice = append(cmdSlice, dl.Url)
+	}
 
 	cmd := exec.Command(dl.DownloadProfile.Command, cmdSlice...)
 	cmd.Dir = dl.Config.Server.DownloadPath
@@ -42,6 +98,7 @@ func (dl *Download) Begin() {
 	if err != nil {
 		dl.State = "failed"
 		dl.Finished = true
+		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stdout pipe: %v", err))
 		return
 	}
@@ -50,6 +107,7 @@ func (dl *Download) Begin() {
 	if err != nil {
 		dl.State = "failed"
 		dl.Finished = true
+		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stderr pipe: %v", err))
 		return
 	}
@@ -58,7 +116,8 @@ func (dl *Download) Begin() {
 	if err != nil {
 		dl.State = "failed"
 		dl.Finished = true
-		dl.Log = append(dl.Log, fmt.Sprintf("error starting youtube-dl: %v", err))
+		dl.FinishedTS = time.Now()
+		dl.Log = append(dl.Log, fmt.Sprintf("error starting command '%s': %v", dl.DownloadProfile.Command, err))
 		return
 	}
 	dl.Pid = cmd.Process.Pid
@@ -81,6 +140,7 @@ func (dl *Download) Begin() {
 
 	dl.State = "complete"
 	dl.Finished = true
+	dl.FinishedTS = time.Now()
 	dl.ExitCode = cmd.ProcessState.ExitCode()
 
 	if dl.ExitCode != 0 {

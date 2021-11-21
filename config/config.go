@@ -12,10 +12,10 @@ import (
 )
 
 type Server struct {
-	Port                            int    `yaml:"port" json:"port"`
-	Address                         string `yaml:"address" json:"address"`
-	DownloadPath                    string `yaml:"download_path" json:"download_path"`
-	MaximumActiveDownloadsPerDomain int    `yaml:"maximum_active_downloads_per_domain" json:"maximum_active_downloads_per_domain"`
+	Port                   int    `yaml:"port" json:"port"`
+	Address                string `yaml:"address" json:"address"`
+	DownloadPath           string `yaml:"download_path" json:"download_path"`
+	MaximumActiveDownloads int    `yaml:"maximum_active_downloads_per_domain" json:"maximum_active_downloads_per_domain"`
 }
 
 type DownloadProfile struct {
@@ -34,6 +34,12 @@ type Config struct {
 	Server           Server            `yaml:"server" json:"server"`
 	UI               UI                `yaml:"ui" json:"ui"`
 	DownloadProfiles []DownloadProfile `yaml:"profiles" json:"profiles"`
+}
+
+func TestConfig() *Config {
+	config := DefaultConfig()
+	config.DownloadProfiles = []DownloadProfile{{Name: "test profile", Command: "sleep", Args: []string{"5"}}}
+	return config
 }
 
 func DefaultConfig() *Config {
@@ -61,7 +67,7 @@ func DefaultConfig() *Config {
 	defaultConfig.UI.PopupWidth = 500
 	defaultConfig.UI.PopupHeight = 500
 
-	defaultConfig.Server.MaximumActiveDownloadsPerDomain = 2
+	defaultConfig.Server.MaximumActiveDownloads = 2
 
 	defaultConfig.ConfigVersion = 2
 
@@ -107,7 +113,7 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 		return fmt.Errorf("path '%s' is not a directory", newConfig.Server.DownloadPath)
 	}
 
-	if newConfig.Server.MaximumActiveDownloadsPerDomain < 0 {
+	if newConfig.Server.MaximumActiveDownloads < 0 {
 		return fmt.Errorf("maximum active downloads can not be < 0")
 	}
 
@@ -200,7 +206,7 @@ func LoadConfig() (*Config, error) {
 	// do migrations
 	configMigrated := false
 	if c.ConfigVersion == 1 {
-		c.Server.MaximumActiveDownloadsPerDomain = 2
+		c.Server.MaximumActiveDownloads = 2
 		c.ConfigVersion = 2
 		configMigrated = true
 		log.Print("migrated config from version 1 => 2")

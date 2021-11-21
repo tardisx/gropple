@@ -1,6 +1,10 @@
 package download
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/tardisx/gropple/config"
+)
 
 func TestUpdateMetadata(t *testing.T) {
 	newD := Download{}
@@ -60,3 +64,36 @@ func TestUpdateMetadata(t *testing.T) {
 // [download] 100.0% of 4.64MiB at 10.12MiB/s ETA 00:00
 // [download] 100% of 4.64MiB in 00:00
 // [ffmpeg] Merging formats into "Halo Infinite Flight 4K Gameplay-wi7Agv1M6PY.mp4"
+
+// This test is a bit broken, because StartQueued immediately starts the queued
+// download, it
+func TestQueue(t *testing.T) {
+	conf := config.TestConfig()
+
+	new1 := Download{Id: 1, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new2 := Download{Id: 2, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new3 := Download{Id: 3, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new4 := Download{Id: 4, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+
+	dls := Downloads{&new1, &new2, &new3, &new4}
+	dls.StartQueued(1)
+	if dls[0].State == "queued" {
+		t.Error("#1 was not started")
+	}
+	if dls[1].State != "queued" {
+		t.Error("#2 is not queued")
+	}
+
+	// this should start no more, as one is still going
+	dls.StartQueued(1)
+	if dls[1].State != "queued" {
+		t.Error("#2 was started when it should not be")
+	}
+
+	dls.StartQueued(2)
+	if dls[1].State == "queued" {
+		t.Error("#2 was not started but it should be")
+
+	}
+
+}

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.5.3] - 2021-11-21
+
+- Add config option to limit number of simultaneous downloads
+- Remove old download entries from the index after they are complete
+
 ## [v0.5.2] - 2021-10-26
 
 - Provide link to re-display the popup window from the index
@@ -12,7 +17,7 @@ All notable changes to this project will be documented in this file.
 ## [v0.5.1] - 2021-10-25
 
 - Add note about adblockers potentially blocking the popup
-- Make it possible to refresh the popup window without initating a new download
+- Make it possible to refresh the popup window without initiating a new download
 
 ## [v0.5.0] - 2021-10-01
 

@@ -19,7 +19,7 @@ import (
 	"github.com/tardisx/gropple/version"
 )
 
-var downloads []*download.Download
+var downloads download.Downloads
 var downloadId = 0
 var conf *config.Config
 
@@ -79,6 +79,16 @@ func main() {
 		for {
 			versionInfo.UpdateGitHubVersion()
 			time.Sleep(time.Hour * 4)
+		}
+	}()
+
+	// start downloading queued downloads when slots available, and clean up
+	// old entries
+	go func() {
+		for {
+			downloads.StartQueued(conf.Server.MaximumActiveDownloads)
+			downloads = downloads.Cleanup()
+			time.Sleep(time.Second)
 		}
 	}()
 
@@ -220,7 +230,7 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 				// set the profile
 				thisDownload.DownloadProfile = *profile
 
-				go func() { thisDownload.Begin() }()
+				thisDownload.Queue()
 				succRes := successResponse{Success: true, Message: "download started"}
 				succResB, _ := json.Marshal(succRes)
 				w.Write(succResB)
