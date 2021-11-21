@@ -23,7 +23,7 @@ var downloads []*download.Download
 var downloadId = 0
 var conf *config.Config
 
-var versionInfo = version.Info{CurrentVersion: "v0.5.2"}
+var versionInfo = version.Info{CurrentVersion: "v0.5.3"}
 
 //go:embed web
 var webFS embed.FS

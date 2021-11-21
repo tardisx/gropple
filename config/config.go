@@ -12,9 +12,10 @@ import (
 )
 
 type Server struct {
-	Port         int    `yaml:"port" json:"port"`
-	Address      string `yaml:"address" json:"address"`
-	DownloadPath string `yaml:"download_path" json:"download_path"`
+	Port                            int    `yaml:"port" json:"port"`
+	Address                         string `yaml:"address" json:"address"`
+	DownloadPath                    string `yaml:"download_path" json:"download_path"`
+	MaximumActiveDownloadsPerDomain int    `yaml:"maximum_active_downloads_per_domain" json:"maximum_active_downloads_per_domain"`
 }
 
 type DownloadProfile struct {
@@ -60,7 +61,9 @@ func DefaultConfig() *Config {
 	defaultConfig.UI.PopupWidth = 500
 	defaultConfig.UI.PopupHeight = 500
 
-	defaultConfig.ConfigVersion = 1
+	defaultConfig.Server.MaximumActiveDownloadsPerDomain = 2
+
+	defaultConfig.ConfigVersion = 2
 
 	return &defaultConfig
 }
@@ -102,6 +105,10 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 	}
 	if !fi.IsDir() {
 		return fmt.Errorf("path '%s' is not a directory", newConfig.Server.DownloadPath)
+	}
+
+	if newConfig.Server.MaximumActiveDownloadsPerDomain < 0 {
+		return fmt.Errorf("maximum active downloads can not be < 0")
 	}
 
 	// check profile name uniqueness
@@ -189,6 +196,21 @@ func LoadConfig() (*Config, error) {
 		log.Printf("Could not parse YAML config '%s': %v", path, err)
 		return nil, err
 	}
+
+	// do migrations
+	configMigrated := false
+	if c.ConfigVersion == 1 {
+		c.Server.MaximumActiveDownloadsPerDomain = 2
+		c.ConfigVersion = 2
+		configMigrated = true
+		log.Print("migrated config from version 1 => 2")
+	}
+
+	if configMigrated {
+		log.Print("Writing new config after version migration")
+		c.WriteConfig()
+	}
+
 	return &c, nil
 }
 

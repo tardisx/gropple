@@ -33,6 +33,10 @@
                     <input type="text" id="config-server-downloadpath" placeholder="path" class="input-long" x-model="config.server.download_path" />
                     <span class="pure-form-message">The path on the server to download files to.</span>
 
+                    <label for="config-server-max-downloads">Maximum active downloads</label>
+                    <input type="text" id="config-server-max-downloads" placeholder="2" class="input-long" x-model.number="config.server.maximum_active_downloads_per_domain" />
+                    <span class="pure-form-message">How many downloads can be simultaneously active. Use '0' for no limit.</span>
+
                     <legend>UI</legend>
 
                     <p>Note that changes to the popup dimensions will require you to recreate your bookmarklet.</p>
