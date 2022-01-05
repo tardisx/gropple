@@ -142,7 +142,6 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	filename := vars["filename"]
-	log.Printf("WOw :%s", filename)
 	if strings.Index(filename, ".js") == len(filename)-3 {
 		f, err := webFS.Open("web/" + filename)
 		if err != nil {
