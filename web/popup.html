@@ -18,8 +18,10 @@
             <tr><th>state</th><td x-text="state"></td></tr>
             <tr><th>progress</th><td x-text="percent"></td></tr>
             <tr><th>ETA</th><td x-text="eta"></td></tr>
+            
         </table>
         <p>You can close this window and your download will continue. Check the <a href="/" target="_gropple_status">Status page</a> to see all downloads in progress.</p>
+        <button x-show="state=='downloading'" class="pure-button" @click="stop()">stop</button>
         <div>
             <h4>Logs</h4>
             <pre x-text="log">
@@ -42,6 +44,18 @@
                 let op = {
                    method: 'POST',
                    body: JSON.stringify({action: 'start', profile: this.profile_chosen}),
+                   headers: { 'Content-Type': 'application/json' }
+                };
+                fetch('/rest/fetch/{{ .dl.Id }}', op)
+                .then(response => response.json())
+                .then(info => {
+                    console.log(info)
+                })
+            },
+            stop() {
+                let op = {
+                   method: 'POST',
+                   body: JSON.stringify({action: 'stop'}),
                    headers: { 'Content-Type': 'application/json' }
                 };
                 fetch('/rest/fetch/{{ .dl.Id }}', op)

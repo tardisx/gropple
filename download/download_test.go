@@ -71,7 +71,7 @@ func TestQueue(t *testing.T) {
 	new1 := Download{Id: 1, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
 	new2 := Download{Id: 2, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
 	new3 := Download{Id: 3, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new4 := Download{Id: 4, State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new4 := Download{Id: 4, Url: "http://company.org/", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
 
 	dls := Downloads{&new1, &new2, &new3, &new4}
 	dls.StartQueued(1)
@@ -80,6 +80,9 @@ func TestQueue(t *testing.T) {
 	}
 	if dls[1].State != "queued" {
 		t.Error("#2 is not queued")
+	}
+	if dls[3].State == "queued" {
+		t.Error("#4 is not started")
 	}
 
 	// this should start no more, as one is still going
@@ -91,6 +94,11 @@ func TestQueue(t *testing.T) {
 	dls.StartQueued(2)
 	if dls[1].State == "queued" {
 		t.Error("#2 was not started but it should be")
+	}
+
+	dls.StartQueued(2)
+	if dls[3].State == "queued" {
+		t.Error("#4 was not started but it should be")
 	}
 
 }

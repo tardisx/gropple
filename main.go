@@ -53,6 +53,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", homeHandler)
+	r.HandleFunc("/static/{filename}", staticHandler)
 	r.HandleFunc("/config", configHandler)
 	r.HandleFunc("/fetch", fetchHandler)
 	r.HandleFunc("/fetch/{id}", fetchHandler)
@@ -134,6 +135,26 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// staticHandler handles requests for static files
+func staticHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	filename := vars["filename"]
+	log.Printf("WOw :%s", filename)
+	if strings.Index(filename, ".js") == len(filename)-3 {
+		f, err := webFS.Open("web/" + filename)
+		if err != nil {
+			log.Printf("error accessing %s - %v", filename, err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		io.Copy(w, f)
+		return
+	}
+	w.WriteHeader(http.StatusNotFound)
 }
 
 // configHandler returns the configuration page
@@ -232,6 +253,15 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 				thisDownload.Queue()
 				succRes := successResponse{Success: true, Message: "download started"}
+				succResB, _ := json.Marshal(succRes)
+				w.Write(succResB)
+				return
+			}
+
+			if thisReq.Action == "stop" {
+
+				thisDownload.Stop()
+				succRes := successResponse{Success: true, Message: "download stopped"}
 				succResB, _ := json.Marshal(succRes)
 				w.Write(succResB)
 				return
