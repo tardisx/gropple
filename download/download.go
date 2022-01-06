@@ -5,12 +5,12 @@ import (
 	"io"
 	"log"
 	"net/url"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/tardisx/gropple/config"
@@ -20,7 +20,7 @@ type Download struct {
 	Id              int                    `json:"id"`
 	Url             string                 `json:"url"`
 	PopupUrl        string                 `json:"popup_url"`
-	Pid             int                    `json:"pid"`
+	Process         *os.Process            `json:"-"`
 	ExitCode        int                    `json:"exit_code"`
 	State           string                 `json:"state"`
 	DownloadProfile config.DownloadProfile `json:"download_profile"`
@@ -59,7 +59,7 @@ func (dls Downloads) StartQueued(maxRunning int) {
 		if dl.State == "queued" && (maxRunning == 0 || active[dl.domain()] < maxRunning) {
 			dl.State = "downloading"
 			active[dl.domain()]++
-			log.Printf("Starting download for %#v", dl)
+			log.Printf("Starting download for id:%d (%s)", dl.Id, dl.Url)
 			dl.mutex.Unlock()
 			go func() { dl.Begin() }()
 		} else {
@@ -101,9 +101,9 @@ func (dl *Download) Queue() {
 func (dl *Download) Stop() {
 	log.Printf("stopping the download")
 	dl.mutex.Lock()
+	dl.Log = append(dl.Log, "aborted by user")
 	defer dl.mutex.Unlock()
-
-	syscall.Kill(dl.Pid, syscall.SIGTERM)
+	dl.Process.Kill()
 }
 
 func (dl *Download) domain() string {
@@ -129,8 +129,8 @@ func (dl *Download) Begin() {
 	cmdSlice := []string{}
 	cmdSlice = append(cmdSlice, dl.DownloadProfile.Args...)
 
-	// only add the url if it's not empty. This helps us with testing
-	if dl.Url != "" {
+	// only add the url if it's not empty or an example URL. This helps us with testing
+	if !(dl.Url == "" || strings.Contains(dl.domain(), "example.org")) {
 		cmdSlice = append(cmdSlice, dl.Url)
 	}
 
@@ -155,7 +155,7 @@ func (dl *Download) Begin() {
 		return
 	}
 
-	log.Printf("Starting %v", cmd)
+	log.Printf("Executing command: %v", cmd)
 	err = cmd.Start()
 	if err != nil {
 		dl.State = "failed"
@@ -164,7 +164,7 @@ func (dl *Download) Begin() {
 		dl.Log = append(dl.Log, fmt.Sprintf("error starting command '%s': %v", dl.DownloadProfile.Command, err))
 		return
 	}
-	dl.Pid = cmd.Process.Pid
+	dl.Process = cmd.Process
 
 	var wg sync.WaitGroup
 
@@ -185,6 +185,7 @@ func (dl *Download) Begin() {
 	cmd.Wait()
 
 	dl.mutex.Lock()
+	log.Printf("Process finished for id: %d (%v)", dl.Id, cmd)
 
 	dl.State = "complete"
 	dl.Finished = true

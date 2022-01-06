@@ -2,6 +2,7 @@ package download
 
 import (
 	"testing"
+	"time"
 
 	"github.com/tardisx/gropple/config"
 )
@@ -68,13 +69,14 @@ func TestUpdateMetadata(t *testing.T) {
 func TestQueue(t *testing.T) {
 	conf := config.TestConfig()
 
-	new1 := Download{Id: 1, Url: "http://domain1.com/foo", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new2 := Download{Id: 2, Url: "http://domain1.com/foo", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new3 := Download{Id: 3, Url: "http://domain1.com/foo", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new4 := Download{Id: 4, Url: "http://company.org/", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new1 := Download{Id: 1, Url: "http://sub.example.org/foo1", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new2 := Download{Id: 2, Url: "http://sub.example.org/foo2", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new3 := Download{Id: 3, Url: "http://sub.example.org/foo3", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new4 := Download{Id: 4, Url: "http://example.org/", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
 
 	dls := Downloads{&new1, &new2, &new3, &new4}
 	dls.StartQueued(1)
+	time.Sleep(time.Millisecond * 100)
 	if dls[0].State == "queued" {
 		t.Error("#1 was not started")
 	}
@@ -87,16 +89,20 @@ func TestQueue(t *testing.T) {
 
 	// this should start no more, as one is still going
 	dls.StartQueued(1)
+	time.Sleep(time.Millisecond * 100)
 	if dls[1].State != "queued" {
 		t.Error("#2 was started when it should not be")
 	}
 
 	dls.StartQueued(2)
+	time.Sleep(time.Millisecond * 100)
 	if dls[1].State == "queued" {
 		t.Error("#2 was not started but it should be")
+
 	}
 
 	dls.StartQueued(2)
+	time.Sleep(time.Millisecond * 100)
 	if dls[3].State == "queued" {
 		t.Error("#4 was not started but it should be")
 	}
@@ -108,6 +114,7 @@ func TestQueue(t *testing.T) {
 	dls[3].State = "queued"
 
 	dls.StartQueued(0)
+	time.Sleep(time.Millisecond * 100)
 
 	// they should all be going
 	if dls[0].State == "queued" || dls[1].State == "queued" || dls[2].State == "queued" || dls[3].State == "queued" {
@@ -121,10 +128,12 @@ func TestQueue(t *testing.T) {
 	dls[3].State = "queued"
 
 	dls.StartQueued(2)
+	time.Sleep(time.Millisecond * 100)
 
 	// first two should be running, third not (same domain) and 4th running (different domain)
 	if dls[0].State == "queued" || dls[1].State == "queued" || dls[2].State != "queued" || dls[3].State == "queued" {
 		t.Error("incorrect queued")
+
 	}
 
 }

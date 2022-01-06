@@ -258,7 +258,6 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if thisReq.Action == "stop" {
-
 				thisDownload.Stop()
 				succRes := successResponse{Success: true, Message: "download stopped"}
 				succResB, _ := json.Marshal(succRes)
