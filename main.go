@@ -296,7 +296,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 				}
 
-				templateData := map[string]interface{}{"dl": dl, "config": conf}
+				templateData := map[string]interface{}{"dl": dl, "config": conf, "canStop": download.CanStopDownload}
 
 				err = t.ExecuteTemplate(w, "layout", templateData)
 				if err != nil {
@@ -353,7 +353,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		templateData := map[string]interface{}{"dl": newDownload, "config": conf}
+		templateData := map[string]interface{}{"dl": newDownload, "config": conf, "canStop": download.CanStopDownload}
 
 		err = t.ExecuteTemplate(w, "layout", templateData)
 		if err != nil {

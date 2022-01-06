@@ -21,7 +21,9 @@
             
         </table>
         <p>You can close this window and your download will continue. Check the <a href="/" target="_gropple_status">Status page</a> to see all downloads in progress.</p>
+        {{ if .canStop }}
         <button x-show="state=='downloading'" class="pure-button" @click="stop()">stop</button>
+        {{ end }}
         <div>
             <h4>Logs</h4>
             <pre x-text="log">

@@ -36,6 +36,8 @@ type Download struct {
 
 type Downloads []*Download
 
+var CanStopDownload = false
+
 // StartQueued starts any downloads that have been queued, we would not exceed
 // maxRunning. If maxRunning is 0, there is no limit.
 func (dls Downloads) StartQueued(maxRunning int) {
@@ -99,6 +101,10 @@ func (dl *Download) Queue() {
 }
 
 func (dl *Download) Stop() {
+	if !CanStopDownload {
+		log.Print("attempted to stop download on a platform that it is not currently supported on - please report this as a bug")
+		os.Exit(1)
+	}
 	log.Printf("stopping the download")
 	dl.mutex.Lock()
 	dl.Log = append(dl.Log, "aborted by user")
