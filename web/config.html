@@ -11,7 +11,7 @@
 
     <div class="pure-g">
 
-        <div class="pure-u-md-1-2 pure-u-1">
+        <div class="pure-u-md-1-2 pure-u-1 l-box">
    
             <form class="pure-form pure-form-stacked gropple-config">
                 <fieldset>
@@ -53,7 +53,7 @@
             </form>
 
         </div>
-        <div class="pure-u-md-1-2 pure-u-1">
+        <div class="pure-u-md-1-2 pure-u-1 l-box">
             <form class="pure-form gropple-config">
                 <fieldset>
 
@@ -91,6 +91,7 @@
                             </template>
 
                             <button class="pure-button button-add" href="#" @click.prevent="profile.args.push('');">add arg</button>
+                            <span class="pure-form-message">Arguments for the command. Note that the shell is not used, so there is no need to quote or escape arguments, including those with spaces.</span>
 
                             <hr>
 
