@@ -320,26 +320,13 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		// check the URL for a sudden but inevitable betrayal
 		if strings.Contains(url[0], conf.Server.Address) {
 			w.WriteHeader(400)
-			fmt.Fprint(w, "you musn't gropple your gropple :-)")
+			fmt.Fprint(w, "you mustn't gropple your gropple :-)")
 			return
 		}
 
 		// create the record
-		// XXX should be atomic!
-		downloadId++
-		newDownload := download.Download{
-			Config: conf,
-
-			Id:       downloadId,
-			Url:      url[0],
-			PopupUrl: fmt.Sprintf("/fetch/%d", downloadId),
-			State:    "choose profile",
-			Finished: false,
-			Eta:      "?",
-			Percent:  0.0,
-			Log:      make([]string, 0, 1000),
-		}
-		downloads = append(downloads, &newDownload)
+		newDownload := download.NewDownload(conf, url[0])
+		downloads = append(downloads, newDownload)
 		// XXX atomic ^^
 
 		newDownload.Log = append(newDownload.Log, "start of log...")

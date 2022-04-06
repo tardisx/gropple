@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/tardisx/gropple/config"
@@ -37,6 +38,8 @@ type Download struct {
 type Downloads []*Download
 
 var CanStopDownload = false
+
+var downloadId int32 = 0
 
 // StartQueued starts any downloads that have been queued, we would not exceed
 // maxRunning. If maxRunning is 0, there is no limit.
@@ -98,6 +101,23 @@ func (dl *Download) Queue() {
 
 	dl.State = "queued"
 
+}
+
+func NewDownload(conf *config.Config, url string) *Download {
+	atomic.AddInt32(&downloadId, 1)
+	dl := Download{
+		Config: conf,
+
+		Id:       int(downloadId),
+		Url:      url,
+		PopupUrl: fmt.Sprintf("/fetch/%d", int(downloadId)),
+		State:    "choose profile",
+		Finished: false,
+		Eta:      "?",
+		Percent:  0.0,
+		Log:      make([]string, 0, 1000),
+	}
+	return &dl
 }
 
 func (dl *Download) Stop() {
