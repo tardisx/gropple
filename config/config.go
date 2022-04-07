@@ -40,7 +40,8 @@ type Config struct {
 // ConfigService is a struct to handle configuration requests, allowing for the
 // location that config files are loaded to be customised.
 type ConfigService struct {
-	Config *Config
+	Config     *Config
+	ConfigPath string
 }
 
 func (cs *ConfigService) LoadTestConfig() {
@@ -166,9 +167,17 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 	return nil
 }
 
-// configPath returns the full path to the config file (which may or may
-// not yet exist) and also creates the subdir if needed (one level)
-func (cs *ConfigService) configPath() string {
+// DetermineConfigDir determines where the config is (or should be) stored.
+func (cs *ConfigService) DetermineConfigDir() {
+	// check current directory first, for a file called gropple.yml
+	_, err := os.Stat("gropple.yml")
+	if err == nil {
+		// exists in current directory, use that.
+		cs.ConfigPath = "gropple.yml"
+		return
+	}
+
+	// otherwise fall back to using the UserConfigDir
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		log.Fatalf("cannot find a directory to store config: %v", err)
@@ -186,13 +195,13 @@ func (cs *ConfigService) configPath() string {
 	}
 
 	fullFilename := fullPath + string(os.PathSeparator) + "config.yml"
-	return fullFilename
+	cs.ConfigPath = fullFilename
 }
 
 // ConfigFileExists checks if the config file already exists, and also checks
 // if there is an error accessing it
 func (cs *ConfigService) ConfigFileExists() (bool, error) {
-	path := cs.configPath()
+	path := cs.ConfigPath
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
@@ -209,7 +218,7 @@ func (cs *ConfigService) ConfigFileExists() (bool, error) {
 // LoadConfig loads the configuration from disk, migrating and updating it to the
 // latest version if needed.
 func (cs *ConfigService) LoadConfig() error {
-	path := cs.configPath()
+	path := cs.ConfigPath
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("Could not read config '%s': %v", path, err)
@@ -246,18 +255,16 @@ func (cs *ConfigService) WriteConfig() {
 		panic(err)
 	}
 
-	path := cs.configPath()
+	path := cs.ConfigPath
 	file, err := os.Create(
 		path,
 	)
 
 	if err != nil {
-		log.Fatalf("Could not open config file")
+		log.Fatalf("Could not open config file %s: %s", path, err)
 	}
 	defer file.Close()
 
 	file.Write(s)
 	file.Close()
-
-	log.Printf("Wrote configuration out to %s", path)
 }

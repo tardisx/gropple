@@ -39,20 +39,26 @@ type errorResponse struct {
 }
 
 func main() {
-	cs := config.ConfigService{}
-	exists, err := cs.ConfigFileExists()
+	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
+
+	configService = &config.ConfigService{}
+	configService.DetermineConfigDir()
+	exists, err := configService.ConfigFileExists()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if !exists {
 		log.Print("No config file - creating default config")
-		cs.LoadDefaultConfig()
-		cs.WriteConfig()
+		configService.LoadDefaultConfig()
+		configService.WriteConfig()
+		log.Printf("Configuration written to %s", configService.ConfigPath)
 	} else {
-		err := cs.LoadConfig()
+		err := configService.LoadConfig()
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("Configuration loaded from %s", configService.ConfigPath)
+
 	}
 
 	r := mux.NewRouter()
@@ -97,8 +103,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
-	log.Printf("go to %s for details on installing the bookmarklet and to check status", configService.Config.Server.Address)
+	log.Printf("Visit %s for details on installing the bookmarklet and to check status", configService.Config.Server.Address)
 	log.Fatal(srv.ListenAndServe())
 
 }

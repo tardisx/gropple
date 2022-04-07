@@ -75,6 +75,13 @@ While gropple will use your `PATH` to find the executable, you can also specify 
 instead. Note that any tools that the downloader calls itself (for instance, ffmpeg) will 
 probably need to be available on your path.
 
+## Portable mode
+
+If you'd like to use gropple from a USB stick or similar, copy the config file from
+it's default location (shown when you start gropple) to the same location as the binary, and rename it to `gropple.yml`. 
+
+If that file is present in the same directory as the binary, it will be used instead.
+
 ## Problems
 
 Most download problems are probably diagnosable via the log - check in the popup window and scroll

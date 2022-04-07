@@ -63,8 +63,6 @@ func (i *Info) canUpgrade() bool {
 		return false
 	}
 
-	log.Printf("We are %s, github is %s", i.CurrentVersion, i.GithubVersion)
-
 	if !semver.IsValid(i.CurrentVersion) {
 		log.Printf("current version %s is invalid", i.CurrentVersion)
 	}
