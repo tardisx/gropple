@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.5.4] - 2022-04-07
+
 - Check the chosen command exists when configuring a profile
+- Improve documentation
 - Add a stop button in the popup to abort a download (Linux/Mac only)
 - Move included JS to local app instead of accessing from a CDN
 - Make the simultaneous download limit apply to each unique domain
