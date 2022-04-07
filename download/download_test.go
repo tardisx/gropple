@@ -67,7 +67,9 @@ func TestUpdateMetadata(t *testing.T) {
 // [ffmpeg] Merging formats into "Halo Infinite Flight 4K Gameplay-wi7Agv1M6PY.mp4"
 
 func TestQueue(t *testing.T) {
-	conf := config.TestConfig()
+	cs := config.ConfigService{}
+	cs.LoadTestConfig()
+	conf := cs.Config
 
 	new1 := Download{Id: 1, Url: "http://sub.example.org/foo1", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
 	new2 := Download{Id: 2, Url: "http://sub.example.org/foo2", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}

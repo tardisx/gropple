@@ -37,13 +37,18 @@ type Config struct {
 	DownloadProfiles []DownloadProfile `yaml:"profiles" json:"profiles"`
 }
 
-func TestConfig() *Config {
-	config := DefaultConfig()
-	config.DownloadProfiles = []DownloadProfile{{Name: "test profile", Command: "sleep", Args: []string{"5"}}}
-	return config
+// ConfigService is a struct to handle configuration requests, allowing for the
+// location that config files are loaded to be customised.
+type ConfigService struct {
+	Config *Config
 }
 
-func DefaultConfig() *Config {
+func (cs *ConfigService) LoadTestConfig() {
+	cs.LoadDefaultConfig()
+	cs.Config.DownloadProfiles = []DownloadProfile{{Name: "test profile", Command: "sleep", Args: []string{"5"}}}
+}
+
+func (cs *ConfigService) LoadDefaultConfig() {
 	defaultConfig := Config{}
 	stdProfile := DownloadProfile{Name: "standard video", Command: "youtube-dl", Args: []string{
 		"--newline",
@@ -72,7 +77,9 @@ func DefaultConfig() *Config {
 
 	defaultConfig.ConfigVersion = 2
 
-	return &defaultConfig
+	cs.Config = &defaultConfig
+
+	return
 }
 
 func (c *Config) ProfileCalled(name string) *DownloadProfile {
@@ -153,14 +160,15 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 		if err != nil {
 			return fmt.Errorf("Could not find %s on the path", newConfig.DownloadProfiles[i].Command)
 		}
-
 	}
 
 	*c = newConfig
 	return nil
 }
 
-func configPath() string {
+// configPath returns the full path to the config file (which may or may
+// not yet exist) and also creates the subdir if needed (one level)
+func (cs *ConfigService) configPath() string {
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		log.Fatalf("cannot find a directory to store config: %v", err)
@@ -181,33 +189,35 @@ func configPath() string {
 	return fullFilename
 }
 
-func ConfigFileExists() bool {
-	info, err := os.Stat(configPath())
+// ConfigFileExists checks if the config file already exists, and also checks
+// if there is an error accessing it
+func (cs *ConfigService) ConfigFileExists() (bool, error) {
+	path := cs.configPath()
+	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return false
+		return false, nil
 	}
 	if err != nil {
-		log.Fatal(err)
+		return false, fmt.Errorf("could not check if '%s' exists: %s", path, err)
 	}
 	if info.Size() == 0 {
-		log.Print("config file is 0 bytes?")
-		return false
+		return false, errors.New("config file is 0 bytes")
 	}
-	return true
+	return true, nil
 }
 
-func LoadConfig() (*Config, error) {
-	path := configPath()
+// LoadConfig loads the configuration from disk, migrating and updating it to the
+// latest version if needed.
+func (cs *ConfigService) LoadConfig() error {
+	path := cs.configPath()
 	b, err := os.ReadFile(path)
 	if err != nil {
-		log.Printf("Could not read config '%s': %v", path, err)
-		return nil, err
+		return fmt.Errorf("Could not read config '%s': %v", path, err)
 	}
 	c := Config{}
 	err = yaml.Unmarshal(b, &c)
 	if err != nil {
-		log.Printf("Could not parse YAML config '%s': %v", path, err)
-		return nil, err
+		return fmt.Errorf("Could not parse YAML config '%s': %v", path, err)
 	}
 
 	// do migrations
@@ -221,19 +231,22 @@ func LoadConfig() (*Config, error) {
 
 	if configMigrated {
 		log.Print("Writing new config after version migration")
-		c.WriteConfig()
+		cs.WriteConfig()
 	}
 
-	return &c, nil
+	cs.Config = &c
+
+	return nil
 }
 
-func (c *Config) WriteConfig() {
-	s, err := yaml.Marshal(c)
+// WriteConfig writes the in-memory config to disk.
+func (cs *ConfigService) WriteConfig() {
+	s, err := yaml.Marshal(cs.Config)
 	if err != nil {
 		panic(err)
 	}
 
-	path := configPath()
+	path := cs.configPath()
 	file, err := os.Create(
 		path,
 	)

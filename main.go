@@ -21,7 +21,7 @@ import (
 
 var downloads download.Downloads
 var downloadId = 0
-var conf *config.Config
+var configService *config.ConfigService
 
 var versionInfo = version.Info{CurrentVersion: "v0.5.4"}
 
@@ -39,16 +39,20 @@ type errorResponse struct {
 }
 
 func main() {
-	if !config.ConfigFileExists() {
+	cs := config.ConfigService{}
+	exists, err := cs.ConfigFileExists()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !exists {
 		log.Print("No config file - creating default config")
-		conf = config.DefaultConfig()
-		conf.WriteConfig()
+		cs.LoadDefaultConfig()
+		cs.WriteConfig()
 	} else {
-		loadedConfig, err := config.LoadConfig()
+		err := cs.LoadConfig()
 		if err != nil {
 			log.Fatal(err)
 		}
-		conf = loadedConfig
 	}
 
 	r := mux.NewRouter()
@@ -69,7 +73,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    fmt.Sprintf(":%d", conf.Server.Port),
+		Addr:    fmt.Sprintf(":%d", configService.Config.Server.Port),
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 5 * time.Second,
 		ReadTimeout:  5 * time.Second,
@@ -87,15 +91,16 @@ func main() {
 	// old entries
 	go func() {
 		for {
-			downloads.StartQueued(conf.Server.MaximumActiveDownloads)
+			downloads.StartQueued(configService.Config.Server.MaximumActiveDownloads)
 			downloads = downloads.Cleanup()
 			time.Sleep(time.Second)
 		}
 	}()
 
 	log.Printf("starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
-	log.Printf("go to %s for details on installing the bookmarklet and to check status", conf.Server.Address)
+	log.Printf("go to %s for details on installing the bookmarklet and to check status", configService.Config.Server.Address)
 	log.Fatal(srv.ListenAndServe())
+
 }
 
 // versionRESTHandler returns the version information, if we have up-to-date info from github
@@ -112,7 +117,7 @@ func versionRESTHandler(w http.ResponseWriter, r *http.Request) {
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
-	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=%d,height=%d'));", conf.Server.Address, conf.UI.PopupWidth, conf.UI.PopupHeight)
+	bookmarkletURL := fmt.Sprintf("javascript:(function(f,s,n,o){window.open(f+encodeURIComponent(s),n,o)}('%s/fetch?url=',window.location,'yourform','width=%d,height=%d'));", configService.Config.Server.Address, configService.Config.UI.PopupWidth, configService.Config.UI.PopupHeight)
 
 	t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/menu.tmpl", "web/index.html")
 	if err != nil {
@@ -128,7 +133,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	info := Info{
 		Downloads:      downloads,
 		BookmarkletURL: template.URL(bookmarkletURL),
-		Config:         conf,
+		Config:         configService.Config,
 	}
 
 	err = t.ExecuteTemplate(w, "layout", info)
@@ -180,7 +185,7 @@ func configRESTHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		err = conf.UpdateFromJSON(b)
+		err = configService.Config.UpdateFromJSON(b)
 
 		if err != nil {
 			errorRes := errorResponse{Success: false, Error: err.Error()}
@@ -189,9 +194,9 @@ func configRESTHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write(errorResB)
 			return
 		}
-		conf.WriteConfig()
+		configService.WriteConfig()
 	}
-	b, _ := json.Marshal(conf)
+	b, _ := json.Marshal(configService.Config)
 	w.Write(b)
 }
 
@@ -243,7 +248,7 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 			if thisReq.Action == "start" {
 				// find the profile they asked for
-				profile := conf.ProfileCalled(thisReq.Profile)
+				profile := configService.Config.ProfileCalled(thisReq.Profile)
 				if profile == nil {
 					panic("bad profile name?")
 				}
@@ -296,7 +301,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 				}
 
-				templateData := map[string]interface{}{"dl": dl, "config": conf, "canStop": download.CanStopDownload}
+				templateData := map[string]interface{}{"dl": dl, "config": configService.Config, "canStop": download.CanStopDownload}
 
 				err = t.ExecuteTemplate(w, "layout", templateData)
 				if err != nil {
@@ -318,14 +323,14 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		// check the URL for a sudden but inevitable betrayal
-		if strings.Contains(url[0], conf.Server.Address) {
+		if strings.Contains(url[0], configService.Config.Server.Address) {
 			w.WriteHeader(400)
 			fmt.Fprint(w, "you mustn't gropple your gropple :-)")
 			return
 		}
 
 		// create the record
-		newDownload := download.NewDownload(conf, url[0])
+		newDownload := download.NewDownload(configService.Config, url[0])
 		downloads = append(downloads, newDownload)
 		// XXX atomic ^^
 
@@ -340,7 +345,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		templateData := map[string]interface{}{"dl": newDownload, "config": conf, "canStop": download.CanStopDownload}
+		templateData := map[string]interface{}{"dl": newDownload, "config": configService.Config, "canStop": download.CanStopDownload}
 
 		err = t.ExecuteTemplate(w, "layout", templateData)
 		if err != nil {
