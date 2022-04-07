@@ -1,6 +1,6 @@
 # gropple
 
-A frontend to youtube-dl (and forks) to download videos with a single click, straight from your web browser.
+A frontend to youtube-dl (or compatible forks, like yt-dlp) to download videos with a single click, straight from your web browser.
 
 ![Screencast](/screencast.gif)
 
