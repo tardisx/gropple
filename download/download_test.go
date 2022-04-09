@@ -47,6 +47,10 @@ func TestUpdateMetadata(t *testing.T) {
 	}
 
 	// [FixupM3u8] Fixing MPEG-TS in MP4 container of "file [-168849776_456239489].mp4"
+	newD.updateMetadata("[FixupM3u8] Fixing MPEG-TS in MP4 container of \"file [-168849776_456239489].mp4")
+	if newD.State != "Fixing MPEG-TS in MP4" {
+		t.Fatalf("did not see fixup state - state is %s", newD.State)
+	}
 
 	// deletes
 	// TODO. Not sure why I don't always see the "Deleting original file" messages after merge -

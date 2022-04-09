@@ -335,4 +335,11 @@ func (dl *Download) updateMetadata(s string) {
 		dl.State = "Downloading metadata, page " + matches[1]
 	}
 
+	// [FixupM3u8] Fixing MPEG-TS in MP4 container of "file [-168849776_456239489].mp4"
+	metadataFixup := regexp.MustCompile(`Fixing MPEG-TS in MP4 container`)
+	matches = metadataFixup.FindStringSubmatch(s)
+	if len(matches) == 1 {
+		dl.State = "Fixing MPEG-TS in MP4"
+	}
+
 }
