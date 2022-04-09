@@ -19,21 +19,31 @@ type Server struct {
 	MaximumActiveDownloads int    `yaml:"maximum_active_downloads_per_domain" json:"maximum_active_downloads_per_domain"`
 }
 
+// DownloadProfile holds the details for executing a downloader
 type DownloadProfile struct {
 	Name    string   `yaml:"name" json:"name"`
 	Command string   `yaml:"command" json:"command"`
 	Args    []string `yaml:"args" json:"args"`
 }
 
+// UI holds the configuration for the user interface
 type UI struct {
 	PopupWidth  int `yaml:"popup_width" json:"popup_width"`
 	PopupHeight int `yaml:"popup_height" json:"popup_height"`
 }
 
+// Destination is the path for a place that a download can be moved to
+type Destination struct {
+	Name string `yaml:"name" json:"name"` // Name for this location
+	Path string `yaml:"path" json:"path"` // Path on disk
+}
+
+// Config is the top level of the user configuration
 type Config struct {
 	ConfigVersion    int               `yaml:"config_version" json:"config_version"`
 	Server           Server            `yaml:"server" json:"server"`
 	UI               UI                `yaml:"ui" json:"ui"`
+	Destinations     []Destination     `yaml:"destinations" json:"destinations"`
 	DownloadProfiles []DownloadProfile `yaml:"profiles" json:"profiles"`
 }
 
@@ -76,7 +86,9 @@ func (cs *ConfigService) LoadDefaultConfig() {
 
 	defaultConfig.Server.MaximumActiveDownloads = 2
 
-	defaultConfig.ConfigVersion = 2
+	defaultConfig.Destinations = make([]Destination, 0)
+
+	defaultConfig.ConfigVersion = 3
 
 	cs.Config = &defaultConfig
 
@@ -238,6 +250,14 @@ func (cs *ConfigService) LoadConfig() error {
 		c.ConfigVersion = 2
 		configMigrated = true
 		log.Print("migrated config from version 1 => 2")
+
+	}
+
+	if c.ConfigVersion == 2 {
+		c.Destinations = make([]Destination, 0)
+		c.ConfigVersion = 3
+		configMigrated = true
+		log.Print("migrated config from version 2 => 3")
 	}
 
 	if configMigrated {

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestMigrationV1toV2(t *testing.T) {
+func TestMigrationV1toV3(t *testing.T) {
 	v2Config := `config_version: 1
 server:
   port: 6123
@@ -36,13 +36,16 @@ profiles:
 	if err != nil {
 		t.Errorf("got error when loading config: %s", err)
 	}
-	if cs.Config.ConfigVersion != 2 {
+	if cs.Config.ConfigVersion != 3 {
 		t.Errorf("did not migrate version (it is '%d')", cs.Config.ConfigVersion)
 	}
 	if cs.Config.Server.MaximumActiveDownloads != 2 {
 		t.Error("did not add MaximumActiveDownloads")
 	}
-	t.Log(cs.ConfigPath)
+	if len(cs.Config.Destinations) != 0 {
+		t.Error("incorrect number of destinations added")
+	}
+	os.Remove(cs.ConfigPath)
 }
 
 func configServiceFromString(configString string) *ConfigService {

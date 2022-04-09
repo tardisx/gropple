@@ -7,11 +7,17 @@
     <p class="error"  x-show="error_message"  x-transition.duration.500ms x-text="error_message"></p>
     <p class="success" x-show="success_message" x-transition.duration.500ms x-text="success_message"></p>
 
-    <p>Note: changes are not saved until the "Save Config" button is pressed at the bottom of the page.</p>
+    <p>Note: changes are not saved until the "Save Config" button is pressed.</p>
+
+    <div class="pure-g">
+        <div class="pure-u-1">
+            <button class="pure-button pure-button-primary" @click="save_config();" href="#">Save Config</button>
+        </div>
+    </div>
 
     <div class="pure-g">
 
-        <div class="pure-u-md-1-2 pure-u-1 l-box">
+        <div class="pure-u-lg-1-3 pure-u-1 l-box">
    
             <form class="pure-form pure-form-stacked gropple-config">
                 <fieldset>
@@ -53,7 +59,7 @@
             </form>
 
         </div>
-        <div class="pure-u-md-1-2 pure-u-1 l-box">
+        <div class="pure-u-lg-1-3 pure-u-1 l-box">
             <form class="pure-form gropple-config">
                 <fieldset>
 
@@ -103,6 +109,38 @@
                 </fieldset>
             </form>
         </div>
+
+        <div class="pure-u-lg-1-3 pure-u-1 l-box">
+            <form class="pure-form gropple-config">
+                <fieldset>
+                    <legend>Destinations</legend>
+                    <p>You can specify custom destinations here. You can specify that
+                        downloads be moved to one of these directories after complete.</p>
+                    </p>
+                    <template x-for="(dest, i) in config.destinations">
+                    <div>
+                        <label x-bind:for="'config-destinations-'+i+'-name'">Name of destination <span x-text="i+1"></span>
+                        </label>                                
+                        
+                        <input type="text" x-bind:id="'config-destinations-'+i+'-name'" class="input-long" placeholder="name" x-model="dest.name" />
+
+                        <span class="pure-form-message">The name of this destination. For your information only.</span>
+
+                        <label x-bind:for="'config-destinations-'+i+'-command'">Path</label>
+                        <input type="text" x-bind:id="'config-destinations-'+i+'-command'" class="input-long" placeholder="name" x-model="dest.path" />
+                        <span class="pure-form-message">Path to move completed downloads to.</span>
+
+                        <button class="pure-button button-del" href="#" @click.prevent="config.destinations.splice(i, 1);">delete destination</button>
+
+                        <hr>
+
+                    </div>
+                </template>
+
+                <button class="pure-button button-add" href="#" @click.prevent="config.destinations.push({name: 'new destination', path: '/'});">add destination</button>
+
+            </fieldset>
+        </form>
     </div>
     <div class="pure-g">
         <div class="pure-u-1">
@@ -119,7 +157,7 @@
 <script>
     function config() {
         return { 
-            config: { server : {}, ui : {}, profiles: [] }, 
+            config: { server : {}, ui : {}, profiles: [], destinations: []}, 
             error_message: '',
             success_message: '',
 
