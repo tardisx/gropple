@@ -266,7 +266,8 @@ func (dl *Download) updateMetadata(s string) {
 	defer dl.mutex.Unlock()
 
 	// [download]  49.7% of ~15.72MiB at  5.83MiB/s ETA 00:07
-	etaRE := regexp.MustCompile(`download.+ETA +(\d\d:\d\d(?::\d\d)?)$`)
+	// [download]  99.3% of ~1.42GiB at 320.87KiB/s ETA 00:07 (frag 212/214)
+	etaRE := regexp.MustCompile(`download.+ETA +(\d\d:\d\d(?::\d\d)?)`)
 	matches := etaRE.FindStringSubmatch(s)
 	if len(matches) == 2 {
 		dl.Eta = matches[1]

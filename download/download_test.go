@@ -40,6 +40,14 @@ func TestUpdateMetadata(t *testing.T) {
 		t.Fatalf("%v", newD.Files)
 	}
 
+	// different download
+	newD.updateMetadata("[download]  99.3% of ~1.42GiB at 320.87KiB/s ETA 00:07 (frag 212/214)")
+	if newD.Eta != "00:07" {
+		t.Fatalf("bad short eta in dl with frag\n%v", newD)
+	}
+
+	// [FixupM3u8] Fixing MPEG-TS in MP4 container of "file [-168849776_456239489].mp4"
+
 	// deletes
 	// TODO. Not sure why I don't always see the "Deleting original file" messages after merge -
 	// maybe a youtube-dl fork thing?
