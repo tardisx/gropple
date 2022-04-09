@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.5.5] - 2022-04-09
+
+- Fix a bug which would erase configuration when migrating from v1 to v2 config
+
 ## [v0.5.4] - 2022-04-07
 
 - Check the chosen command exists when configuring a profile
