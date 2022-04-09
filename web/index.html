@@ -31,7 +31,18 @@
             <template x-for="item in items">
                 <tr>
                     <td x-text="item.id"></td>
-                    <td x-text="item.files || item.url"></td>
+                    <td>
+                        <span x-show="item.files && item.files.length > 0">
+                            <ul>
+                                <template x-for="file in item.files">
+                                    <li x-text="file"></li>
+                                </template>
+                            </ul>
+                        </span>
+                        <span x-show="! item.files || item.files.length == 0"
+                              x-text="item.url">
+                        </span>
+                    </td>
                     <td><a class="int-link" x-bind:href="item.url">&#x2197;</a></td>
                     <td><a class="int-link" @click="show_popup(item)" href="#">&#x1F4C4;</a></td>
                     <td :class="'state-'+item.state" x-text="item.state"></td>
