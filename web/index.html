@@ -31,7 +31,7 @@
             <template x-for="item in items">
                 <tr>
                     <td x-text="item.id"></td>
-                    <td x-text="item.files"></td>
+                    <td x-text="item.files || item.url"></td>
                     <td><a class="int-link" x-bind:href="item.url">&#x2197;</a></td>
                     <td><a class="int-link" @click="show_popup(item)" href="#">&#x1F4C4;</a></td>
                     <td :class="'state-'+item.state" x-text="item.state"></td>
