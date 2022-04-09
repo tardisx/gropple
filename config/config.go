@@ -175,6 +175,17 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 		}
 	}
 
+	// check destinations
+	for _, dest := range newConfig.Destinations {
+		s, err := os.Stat(dest.Path)
+		if err != nil {
+			return fmt.Errorf("destination '%s' (%s) is bad: %s", dest.Name, dest.Path, err)
+		}
+		if !s.IsDir() {
+			return fmt.Errorf("destination '%s' (%s) is not a directory", dest.Name, dest.Path)
+		}
+	}
+
 	*c = newConfig
 	return nil
 }

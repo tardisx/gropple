@@ -114,8 +114,9 @@
             <form class="pure-form gropple-config">
                 <fieldset>
                     <legend>Destinations</legend>
-                    <p>You can specify custom destinations here. You can specify that
-                        downloads be moved to one of these directories after complete.</p>
+                    <p>You can specify custom destinations (directories) here. Downloads can be
+                        moved to one of these directories after completion from the index page, 
+                        if you do not want them to be left in the download path above.</p>
                     </p>
                     <template x-for="(dest, i) in config.destinations">
                     <div>
@@ -137,7 +138,7 @@
                     </div>
                 </template>
 
-                <button class="pure-button button-add" href="#" @click.prevent="config.destinations.push({name: 'new destination', path: '/'});">add destination</button>
+                <button class="pure-button button-add" href="#" @click.prevent="config.destinations.push({name: 'new destination', path: '/tmp'});">add destination</button>
 
             </fieldset>
         </form>
