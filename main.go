@@ -23,7 +23,7 @@ var downloads download.Downloads
 var downloadId = 0
 var configService *config.ConfigService
 
-var versionInfo = version.Info{CurrentVersion: "v0.5.5"}
+var versionInfo = version.Info{CurrentVersion: "v0.6.0"}
 
 //go:embed web
 var webFS embed.FS
@@ -133,12 +133,14 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		Downloads      []*download.Download
 		BookmarkletURL template.URL
 		Config         *config.Config
+		Version        version.Info
 	}
 
 	info := Info{
 		Downloads:      downloads,
 		BookmarkletURL: template.URL(bookmarkletURL),
 		Config:         configService.Config,
+		Version:        versionInfo,
 	}
 
 	err = t.ExecuteTemplate(w, "layout", info)
@@ -350,7 +352,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		templateData := map[string]interface{}{"dl": newDownload, "config": configService.Config, "canStop": download.CanStopDownload}
+		templateData := map[string]interface{}{"Version": versionInfo, "dl": newDownload, "config": configService.Config, "canStop": download.CanStopDownload}
 
 		err = t.ExecuteTemplate(w, "layout", templateData)
 		if err != nil {

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.6.0] - 2022-04
+
+- When downloading from a playlist, show the total number of videos and how many have been downloaded
+- Update status when initially downloading playlist details
+- Show version in web UI
+
 ## [v0.5.5] - 2022-04-09
 
 - Fix a bug which would erase configuration when migrating from v1 to v2 config

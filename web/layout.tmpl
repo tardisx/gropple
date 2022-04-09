@@ -71,7 +71,8 @@
 
     {{ template "content" . }}
     <footer>
-    Homepage: <a href="https://github.com/tardisx/gropple">https://github.com/tardisx/gropple</a>
+    Homepage: <a href="https://github.com/tardisx/gropple">https://github.com/tardisx/gropple</a><br>
+    Version: {{ .Version.CurrentVersion }}
     </footer>
 </body>
     {{ template "js" . }}

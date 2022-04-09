@@ -16,6 +16,7 @@
             </tr>
             <tr><th>current filename</th><td x-text="filename"></td></tr>
             <tr><th>state</th><td x-text="state"></td></tr>
+            <tr x-show="playlist_total > 0"><th>playlist progress</th><td x-text="playlist_current + '/' + playlist_total"></td></tr>
             <tr><th>progress</th><td x-text="percent"></td></tr>
             <tr><th>ETA</th><td x-text="eta"></td></tr>
             
@@ -37,6 +38,7 @@
         history.replaceState(null, '', ['/fetch/{{ .dl.Id }}'])
         return { 
             eta: '', percent: 0.0, state: '??', filename: '', finished: false, log :'',
+            playlist_current: 0, playlist_total: 0,
             profile_chosen: null,
             watch_profile() {
                 this.$watch('profile_chosen', value => this.profile_chosen(value))
@@ -73,6 +75,8 @@
                     this.eta = info.eta;
                     this.percent = info.percent + "%";
                     this.state = info.state;
+                    this.playlist_current = info.playlist_current;
+                    this.playlist_total = info.playlist_total;
                     if (this.state != 'choose profile') {
                         this.profile_chosen = true;
                     }

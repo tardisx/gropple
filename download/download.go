@@ -28,6 +28,8 @@ type Download struct {
 	Finished        bool                   `json:"finished"`
 	FinishedTS      time.Time              `json:"finished_ts"`
 	Files           []string               `json:"files"`
+	PlaylistCurrent int                    `json:"playlist_current"`
+	PlaylistTotal   int                    `json:"playlist_total"`
 	Eta             string                 `json:"eta"`
 	Percent         float32                `json:"percent"`
 	Log             []string               `json:"log"`
@@ -314,4 +316,22 @@ func (dl *Download) updateMetadata(s string) {
 			}
 		}
 	}
+
+	// [download] Downloading video 1 of 3
+	playlistDetails := regexp.MustCompile(`Downloading video (\d+) of (\d+)`)
+	matches = playlistDetails.FindStringSubmatch(s)
+	if len(matches) == 3 {
+		total, _ := strconv.ParseInt(matches[2], 10, 32)
+		current, _ := strconv.ParseInt(matches[1], 10, 32)
+		dl.PlaylistTotal = int(total)
+		dl.PlaylistCurrent = int(current)
+	}
+
+	// [Site] user: Downloading JSON metadata page 2
+	metadataDL := regexp.MustCompile(`Downloading JSON metadata page (\d+)`)
+	matches = metadataDL.FindStringSubmatch(s)
+	if len(matches) == 2 {
+		dl.State = "Downloading metadata, page " + matches[1]
+	}
+
 }
