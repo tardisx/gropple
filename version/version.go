@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 
 	"golang.org/x/mod/semver"
 )
@@ -19,8 +20,24 @@ type Info struct {
 	GithubVersionFetched bool   `json:"-"`
 }
 
-func (i *Info) UpdateGitHubVersion() error {
-	i.GithubVersionFetched = false
+type Manager struct {
+	VersionInfo Info
+	lock        sync.Mutex
+}
+
+func (m *Manager) GetInfo() Info {
+	// log.Print("getting info... b4 lock")
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	return m.VersionInfo
+}
+
+func (m *Manager) UpdateGitHubVersion() error {
+	m.lock.Lock()
+	m.VersionInfo.GithubVersionFetched = false
+	m.lock.Unlock()
+
 	versionUrl := "https://api.github.com/repos/tardisx/gropple/releases"
 	resp, err := http.Get(versionUrl)
 	if err != nil {
@@ -51,27 +68,30 @@ func (i *Info) UpdateGitHubVersion() error {
 		return errors.New("no releases found")
 	}
 
-	i.GithubVersion = releases[0].Name
+	m.lock.Lock()
 
-	i.GithubVersionFetched = true
-	i.UpgradeAvailable = i.canUpgrade()
+	defer m.lock.Unlock()
+	m.VersionInfo.GithubVersion = releases[0].Name
+	m.VersionInfo.GithubVersionFetched = true
+	m.VersionInfo.UpgradeAvailable = m.canUpgrade()
+
 	return nil
 }
 
-func (i *Info) canUpgrade() bool {
-	if !i.GithubVersionFetched {
+func (m *Manager) canUpgrade() bool {
+	if !m.VersionInfo.GithubVersionFetched {
 		return false
 	}
 
-	if !semver.IsValid(i.CurrentVersion) {
-		log.Printf("current version %s is invalid", i.CurrentVersion)
+	if !semver.IsValid(m.VersionInfo.CurrentVersion) {
+		log.Printf("current version %s is invalid", m.VersionInfo.CurrentVersion)
 	}
 
-	if !semver.IsValid(i.GithubVersion) {
-		log.Printf("github version %s is invalid", i.GithubVersion)
+	if !semver.IsValid(m.VersionInfo.GithubVersion) {
+		log.Printf("github version %s is invalid", m.VersionInfo.GithubVersion)
 	}
 
-	if semver.Compare(i.CurrentVersion, i.GithubVersion) == -1 {
+	if semver.Compare(m.VersionInfo.CurrentVersion, m.VersionInfo.GithubVersion) == -1 {
 		return true
 	}
 	return false

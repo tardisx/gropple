@@ -23,7 +23,9 @@ var downloads download.Downloads
 var downloadId = 0
 var configService *config.ConfigService
 
-var versionInfo = version.Info{CurrentVersion: "v0.6.0"}
+var versionInfo = version.Manager{
+	VersionInfo: version.Info{CurrentVersion: "v0.6.0"},
+}
 
 //go:embed web
 var webFS embed.FS
@@ -39,7 +41,7 @@ type errorResponse struct {
 }
 
 func main() {
-	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.CurrentVersion)
+	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.GetInfo().CurrentVersion)
 
 	configService = &config.ConfigService{}
 	configService.DetermineConfigDir()
@@ -110,8 +112,8 @@ func main() {
 
 // versionRESTHandler returns the version information, if we have up-to-date info from github
 func versionRESTHandler(w http.ResponseWriter, r *http.Request) {
-	if versionInfo.GithubVersionFetched {
-		b, _ := json.Marshal(versionInfo)
+	if versionInfo.GetInfo().GithubVersionFetched {
+		b, _ := json.Marshal(versionInfo.GetInfo())
 		w.Write(b)
 	} else {
 		w.WriteHeader(400)
@@ -140,7 +142,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		Downloads:      downloads,
 		BookmarkletURL: template.URL(bookmarkletURL),
 		Config:         configService.Config,
-		Version:        versionInfo,
+		Version:        versionInfo.GetInfo(),
 	}
 
 	err = t.ExecuteTemplate(w, "layout", info)
