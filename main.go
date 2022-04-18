@@ -19,7 +19,7 @@ import (
 	"github.com/tardisx/gropple/version"
 )
 
-var downloads download.Downloads
+var dm *download.Manager
 var downloadId = 0
 var configService *config.ConfigService
 
@@ -60,8 +60,10 @@ func main() {
 			log.Fatal(err)
 		}
 		log.Printf("Configuration loaded from %s", configService.ConfigPath)
-
 	}
+
+	// create the download manager
+	dm = &download.Manager{MaxPerDomain: configService.Config.Server.MaximumActiveDownloads}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", homeHandler)
@@ -97,13 +99,7 @@ func main() {
 
 	// start downloading queued downloads when slots available, and clean up
 	// old entries
-	go func() {
-		for {
-			downloads.StartQueued(configService.Config.Server.MaximumActiveDownloads)
-			downloads = downloads.Cleanup()
-			time.Sleep(time.Second)
-		}
-	}()
+	go dm.ManageQueue()
 
 	log.Printf("Visit %s for details on installing the bookmarklet and to check status", configService.Config.Server.Address)
 	log.Fatal(srv.ListenAndServe())
@@ -138,8 +134,11 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		Version        version.Info
 	}
 
+	dm.Lock.Lock()
+	defer dm.Lock.Unlock()
+
 	info := Info{
-		Downloads:      downloads,
+		Downloads:      dm.Downloads,
 		BookmarkletURL: template.URL(bookmarkletURL),
 		Config:         configService.Config,
 		Version:        versionInfo.GetInfo(),
@@ -220,13 +219,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// find the download
-		var thisDownload *download.Download
-		for _, dl := range downloads {
-			if dl.Id == id {
-				thisDownload = dl
-			}
-		}
+		dm.Lock.Lock()
+		defer dm.Lock.Unlock()
+
+		thisDownload := dm.DlById(id)
 		if thisDownload == nil {
 			http.NotFound(w, r)
 			return
@@ -263,8 +259,8 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				// set the profile
 				thisDownload.DownloadProfile = *profile
+				dm.Queue(thisDownload.Id)
 
-				thisDownload.Queue()
 				succRes := successResponse{Success: true, Message: "download started"}
 				succResB, _ := json.Marshal(succRes)
 				w.Write(succResB)
@@ -272,7 +268,7 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if thisReq.Action == "stop" {
-				thisDownload.Stop()
+				dm.Stop(thisDownload.Id)
 				succRes := successResponse{Success: true, Message: "download stopped"}
 				succResB, _ := json.Marshal(succRes)
 				w.Write(succResB)
@@ -290,7 +286,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchInfoRESTHandler(w http.ResponseWriter, r *http.Request) {
-	b, _ := json.Marshal(downloads)
+
+	dm.Lock.Lock()
+	defer dm.Lock.Unlock()
+	b, _ := json.Marshal(dm.Downloads)
 	w.Write(b)
 }
 
@@ -301,25 +300,26 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idString := vars["id"]
 
+	dm.Lock.Lock()
+	defer dm.Lock.Unlock()
+
 	idInt, err := strconv.ParseInt(idString, 10, 32)
+
+	// existing, load it up
 	if err == nil && idInt > 0 {
-		for _, dl := range downloads {
-			if dl.Id == int(idInt) {
-				t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
-				if err != nil {
-					panic(err)
-				}
-
-				templateData := map[string]interface{}{"dl": dl, "config": configService.Config, "canStop": download.CanStopDownload}
-
-				err = t.ExecuteTemplate(w, "layout", templateData)
-				if err != nil {
-					panic(err)
-				}
-				return
-			}
+		dl := dm.DlById(int(idInt))
+		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
+		if err != nil {
+			panic(err)
 		}
 
+		templateData := map[string]interface{}{"dl": dl, "config": configService.Config, "canStop": download.CanStopDownload}
+
+		err = t.ExecuteTemplate(w, "layout", templateData)
+		if err != nil {
+			panic(err)
+		}
+		return
 	}
 
 	query := r.URL.Query()
@@ -339,22 +339,16 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// create the record
-		newDownload := download.NewDownload(configService.Config, url[0])
-		downloads = append(downloads, newDownload)
-		// XXX atomic ^^
 
-		newDownload.Log = append(newDownload.Log, "start of log...")
-
-		// go func() {
-		// 	newDownload.Begin()
-		// }()
+		newDownloadId := dm.NewDownload(configService.Config, url[0])
+		dm.AppendLog(newDownloadId, "start of log...")
 
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
 		}
 
-		templateData := map[string]interface{}{"Version": versionInfo, "dl": newDownload, "config": configService.Config, "canStop": download.CanStopDownload}
+		templateData := map[string]interface{}{"Version": versionInfo.GetInfo(), "dl": dm.DlById(newDownloadId), "config": configService.Config, "canStop": download.CanStopDownload}
 
 		err = t.ExecuteTemplate(w, "layout", templateData)
 		if err != nil {

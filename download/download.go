@@ -34,78 +34,92 @@ type Download struct {
 	Percent         float32                `json:"percent"`
 	Log             []string               `json:"log"`
 	Config          *config.Config
-	mutex           sync.Mutex
 }
 
-type Downloads []*Download
+type Manager struct {
+	Downloads    []*Download
+	MaxPerDomain int
+	Lock         sync.Mutex
+}
 
 var CanStopDownload = false
 
 var downloadId int32 = 0
 
-// StartQueued starts any downloads that have been queued, we would not exceed
+func (m *Manager) ManageQueue() {
+	for {
+
+		m.Lock.Lock()
+
+		m.startQueued(m.MaxPerDomain)
+		m.cleanup()
+		m.Lock.Unlock()
+
+		time.Sleep(time.Second)
+	}
+}
+
+// startQueued starts any downloads that have been queued, we would not exceed
 // maxRunning. If maxRunning is 0, there is no limit.
-func (dls Downloads) StartQueued(maxRunning int) {
+func (m *Manager) startQueued(maxRunning int) {
 	active := make(map[string]int)
 
-	for _, dl := range dls {
-
-		dl.mutex.Lock()
+	for _, dl := range m.Downloads {
 
 		if dl.State == "downloading" {
 			active[dl.domain()]++
 		}
-		dl.mutex.Unlock()
 
 	}
 
-	for _, dl := range dls {
-
-		dl.mutex.Lock()
+	for _, dl := range m.Downloads {
 
 		if dl.State == "queued" && (maxRunning == 0 || active[dl.domain()] < maxRunning) {
 			dl.State = "downloading"
 			active[dl.domain()]++
 			log.Printf("Starting download for id:%d (%s)", dl.Id, dl.Url)
-			dl.mutex.Unlock()
-			go func() { dl.Begin() }()
-		} else {
-			dl.mutex.Unlock()
+			go func() {
+				m.Begin(dl.Id)
+			}()
 		}
 	}
 
 }
 
-// Cleanup removes old downloads from the list. Hardcoded to remove them one hour
+// cleanup removes old downloads from the list. Hardcoded to remove them one hour
 // completion.
-func (dls Downloads) Cleanup() Downloads {
-	newDLs := Downloads{}
-	for _, dl := range dls {
-
-		dl.mutex.Lock()
+func (m *Manager) cleanup() {
+	newDLs := []*Download{}
+	for _, dl := range m.Downloads {
 
 		if dl.Finished && time.Since(dl.FinishedTS) > time.Duration(time.Hour) {
 			// do nothing
 		} else {
 			newDLs = append(newDLs, dl)
 		}
-		dl.mutex.Unlock()
 
 	}
-	return newDLs
+	m.Downloads = newDLs
+}
+
+func (m *Manager) DlById(id int) *Download {
+	for _, dl := range m.Downloads {
+		if dl.Id == id {
+			return dl
+		}
+	}
+	return nil
 }
 
 // Queue queues a download
-func (dl *Download) Queue() {
+func (m *Manager) Queue(id int) {
 
-	dl.mutex.Lock()
-	defer dl.mutex.Unlock()
-
+	dl := m.DlById(id)
 	dl.State = "queued"
 
 }
 
-func NewDownload(conf *config.Config, url string) *Download {
+func (m *Manager) NewDownload(conf *config.Config, url string) int {
 	atomic.AddInt32(&downloadId, 1)
 	dl := Download{
 		Config: conf,
@@ -119,24 +133,30 @@ func NewDownload(conf *config.Config, url string) *Download {
 		Percent:  0.0,
 		Log:      make([]string, 0, 1000),
 	}
-	return &dl
+	m.Downloads = append(m.Downloads, &dl)
+	return int(downloadId)
 }
 
-func (dl *Download) Stop() {
+func (m *Manager) AppendLog(id int, text string) {
+	dl := m.DlById(id)
+	dl.Log = append(dl.Log, text)
+}
+
+// Stop the download.
+func (m *Manager) Stop(id int) {
 	if !CanStopDownload {
 		log.Print("attempted to stop download on a platform that it is not currently supported on - please report this as a bug")
 		os.Exit(1)
 	}
+	dl := m.DlById(id)
+
 	log.Printf("stopping the download")
-	dl.mutex.Lock()
 	dl.Log = append(dl.Log, "aborted by user")
-	defer dl.mutex.Unlock()
 	dl.Process.Kill()
 }
 
 func (dl *Download) domain() string {
 
-	// note that we expect to already have the mutex locked by the caller
 	url, err := url.Parse(dl.Url)
 	if err != nil {
 		log.Printf("Unknown domain for url: %s", dl.Url)
@@ -149,9 +169,10 @@ func (dl *Download) domain() string {
 
 // Begin starts a download, by starting the command specified in the DownloadProfile.
 // It blocks until the download is complete.
-func (dl *Download) Begin() {
+func (m *Manager) Begin(id int) {
+	m.Lock.Lock()
 
-	dl.mutex.Lock()
+	dl := m.DlById(id)
 
 	dl.State = "downloading"
 	cmdSlice := []string{}
@@ -171,6 +192,8 @@ func (dl *Download) Begin() {
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stdout pipe: %v", err))
+		m.Lock.Unlock()
+
 		return
 	}
 
@@ -180,6 +203,8 @@ func (dl *Download) Begin() {
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stderr pipe: %v", err))
+		m.Lock.Unlock()
+
 		return
 	}
 
@@ -190,30 +215,34 @@ func (dl *Download) Begin() {
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error starting command '%s': %v", dl.DownloadProfile.Command, err))
+		m.Lock.Unlock()
+
 		return
 	}
 	dl.Process = cmd.Process
 
 	var wg sync.WaitGroup
 
-	dl.mutex.Unlock()
-
 	wg.Add(2)
+
+	m.Lock.Unlock()
+
 	go func() {
 		defer wg.Done()
-		dl.updateDownload(stdout)
+		m.updateDownload(dl, stdout)
 	}()
 
 	go func() {
 		defer wg.Done()
-		dl.updateDownload(stderr)
+		m.updateDownload(dl, stderr)
 	}()
 
 	wg.Wait()
 	cmd.Wait()
 
-	dl.mutex.Lock()
 	log.Printf("Process finished for id: %d (%v)", dl.Id, cmd)
+
+	m.Lock.Lock()
 
 	dl.State = "complete"
 	dl.Finished = true
@@ -223,11 +252,12 @@ func (dl *Download) Begin() {
 	if dl.ExitCode != 0 {
 		dl.State = "failed"
 	}
-	dl.mutex.Unlock()
+
+	m.Lock.Unlock()
 
 }
 
-func (dl *Download) updateDownload(r io.Reader) {
+func (m *Manager) updateDownload(dl *Download, r io.Reader) {
 	// XXX not sure if we might get a partial line?
 	buf := make([]byte, 1024)
 	for {
@@ -242,15 +272,16 @@ func (dl *Download) updateDownload(r io.Reader) {
 					continue
 				}
 
-				dl.mutex.Lock()
+				m.Lock.Lock()
 
 				// append the raw log
 				dl.Log = append(dl.Log, l)
 
-				dl.mutex.Unlock()
-
 				// look for the percent and eta and other metadata
 				dl.updateMetadata(l)
+
+				m.Lock.Unlock()
+
 			}
 		}
 		if err != nil {
@@ -260,10 +291,6 @@ func (dl *Download) updateDownload(r io.Reader) {
 }
 
 func (dl *Download) updateMetadata(s string) {
-
-	dl.mutex.Lock()
-
-	defer dl.mutex.Unlock()
 
 	// [download]  49.7% of ~15.72MiB at  5.83MiB/s ETA 00:07
 	// [download]  99.3% of ~1.42GiB at 320.87KiB/s ETA 00:07 (frag 212/214)
