@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -43,8 +44,17 @@ type errorResponse struct {
 func main() {
 	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.GetInfo().CurrentVersion)
 
+	var configPath string
+	flag.StringVar(&configPath, "config-path", "", "path to config file")
+	flag.Parse()
+
 	configService = &config.ConfigService{}
-	configService.DetermineConfigDir()
+	if configPath != "" {
+		configService.ConfigPath = configPath
+	} else {
+		configService.DetermineConfigDir()
+	}
+
 	exists, err := configService.ConfigFileExists()
 	if err != nil {
 		log.Fatal(err)

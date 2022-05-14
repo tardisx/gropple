@@ -61,13 +61,13 @@ func (cs *ConfigService) LoadTestConfig() {
 
 func (cs *ConfigService) LoadDefaultConfig() {
 	defaultConfig := Config{}
-	stdProfile := DownloadProfile{Name: "standard video", Command: "youtube-dl", Args: []string{
+	stdProfile := DownloadProfile{Name: "standard video", Command: "yt-dlp", Args: []string{
 		"--newline",
 		"--write-info-json",
 		"-f",
 		"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
 	}}
-	mp3Profile := DownloadProfile{Name: "standard mp3", Command: "youtube-dl", Args: []string{
+	mp3Profile := DownloadProfile{Name: "standard mp3", Command: "yt-dlp", Args: []string{
 		"--newline",
 		"--write-info-json",
 		"--extract-audio",
@@ -79,7 +79,7 @@ func (cs *ConfigService) LoadDefaultConfig() {
 
 	defaultConfig.Server.Port = 6123
 	defaultConfig.Server.Address = "http://localhost:6123"
-	defaultConfig.Server.DownloadPath = "./"
+	defaultConfig.Server.DownloadPath = "/downloads"
 
 	defaultConfig.UI.PopupWidth = 500
 	defaultConfig.UI.PopupHeight = 500

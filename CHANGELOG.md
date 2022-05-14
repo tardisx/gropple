@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Show version in web UI
 - Fixes and improvements to capturing output info and showing it in the UI
 - Improve index page (show URL of queued downloads instead of nothing)
+- Add docker support
 
 ## [v0.5.5] - 2022-04-09
 
