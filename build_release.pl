@@ -38,3 +38,11 @@ foreach my $type (keys %build) {
   system "go", "build", "-o", "release/$type/" . $build{$type}->{filename};
   system "zip", "-j", "dist/gropple-$type-$version.zip", ( glob "release/$type/*" );
 }
+
+# now docker
+$ENV{VERSION}="$version";
+system "docker-compose", "-f", "docker-compose.build.yml", "build";
+system "docker", "tag", "tardisx/gropple:$version", "tardisx/gropple:latest";
+system "docker", "push", "tardisx/gropple:$version";
+system "docker", "push", "tardisx/gropple:latest";
+
