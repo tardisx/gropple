@@ -104,6 +104,15 @@ func (c *Config) ProfileCalled(name string) *DownloadProfile {
 	return nil
 }
 
+func (c *Config) DestinationCalled(name string) *Destination {
+	for _, p := range c.Destinations {
+		if p.Name == name {
+			return &p
+		}
+	}
+	return nil
+}
+
 func (c *Config) UpdateFromJSON(j []byte) error {
 	newConfig := Config{}
 	err := json.Unmarshal(j, &newConfig)

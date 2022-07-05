@@ -15,6 +15,17 @@
                 </td>
             </tr>
             <tr><th>current filename</th><td x-text="filename"></td></tr>
+            <tr>
+                <th>destination</th>
+                <td>
+                    <select  x-on:change="update_destination()" class="pure-input-1-2" x-model="destination_chosen">
+                        <option value="-">leave in {{ .config.Server.DownloadPath }}</option>
+                    {{ range $i := .config.Destinations }}
+                        <option>{{ $i.Name }}</option>
+                    {{ end }}
+                    </select>
+                </td>
+            </tr>
             <tr><th>state</th><td x-text="state"></td></tr>
             <tr x-show="playlist_total > 0"><th>playlist progress</th><td x-text="playlist_current + '/' + playlist_total"></td></tr>
             <tr><th>progress</th><td x-text="percent"></td></tr>
@@ -40,6 +51,7 @@
             eta: '', percent: 0.0, state: '??', filename: '', finished: false, log :'',
             playlist_current: 0, playlist_total: 0,
             profile_chosen: null,
+            destination_chosen: null,
             watch_profile() {
                 this.$watch('profile_chosen', value => this.profile_chosen(value))
             },
@@ -48,6 +60,18 @@
                 let op = {
                    method: 'POST',
                    body: JSON.stringify({action: 'start', profile: this.profile_chosen}),
+                   headers: { 'Content-Type': 'application/json' }
+                };
+                fetch('/rest/fetch/{{ .dl.Id }}', op)
+                .then(response => response.json())
+                .then(info => {
+                    console.log(info)
+                })
+            },
+            update_destination(name) {
+                let op = {
+                   method: 'POST',
+                   body: JSON.stringify({action: 'change_destination', destination: this.destination_chosen}),
                    headers: { 'Content-Type': 'application/json' }
                 };
                 fetch('/rest/fetch/{{ .dl.Id }}', op)

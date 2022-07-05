@@ -111,6 +111,25 @@ func main() {
 	// old entries
 	go dm.ManageQueue()
 
+	urls := []string{
+		"https://www.youtube.com/watch?v=qG_rRkuGBW8",
+		"https://www.youtube.com/watch?v=ZUzhZpQAU40",
+		// "https://www.youtube.com/watch?v=kVxM3eRWGak",
+		// "https://www.youtube.com/watch?v=pl-y9869y0w",
+		// "https://www.youtube.com/watch?v=Uw4NEPE4l3A",
+		// "https://www.youtube.com/watch?v=6tIsT57_nS0",
+		// "https://www.youtube.com/watch?v=2RF0lcTuuYE",
+		// "https://www.youtube.com/watch?v=lymwNQY0dus",
+		// "https://www.youtube.com/watch?v=NTc-I4Z_duc",
+		// "https://www.youtube.com/watch?v=wNSm1TJ84Ac",
+	}
+	for _, u := range urls {
+		d := download.NewDownload(u, configService.Config)
+		d.DownloadProfile = *configService.Config.ProfileCalled("standard video")
+		dm.AddDownload(d)
+		dm.Queue(d)
+	}
+
 	log.Printf("Visit %s for details on installing the bookmarklet and to check status", configService.Config.Server.Address)
 	log.Fatal(srv.ListenAndServe())
 
@@ -138,22 +157,21 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Info struct {
-		Downloads      []*download.Download
+		Manager        *download.Manager
 		BookmarkletURL template.URL
 		Config         *config.Config
 		Version        version.Info
 	}
 
-	dm.Lock.Lock()
-	defer dm.Lock.Unlock()
-
 	info := Info{
-		Downloads:      dm.Downloads,
+		Manager:        dm,
 		BookmarkletURL: template.URL(bookmarkletURL),
 		Config:         configService.Config,
 		Version:        versionInfo.GetInfo(),
 	}
 
+	dm.Lock.Lock()
+	defer dm.Lock.Unlock()
 	err = t.ExecuteTemplate(w, "layout", info)
 	if err != nil {
 		panic(err)
@@ -229,20 +247,21 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		dm.Lock.Lock()
-		defer dm.Lock.Unlock()
-
-		thisDownload := dm.DlById(id)
-		if thisDownload == nil {
+		thisDownload, err := dm.GetDlById(id)
+		if err != nil {
 			http.NotFound(w, r)
 			return
+		}
+		if thisDownload == nil {
+			panic("should not happen")
 		}
 
 		if r.Method == "POST" {
 
 			type updateRequest struct {
-				Action  string `json:"action"`
-				Profile string `json:"profile"`
+				Action      string `json:"action"`
+				Profile     string `json:"profile"`
+				Destination string `json:"destination"`
 			}
 
 			thisReq := updateRequest{}
@@ -268,8 +287,11 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 					panic("bad profile name?")
 				}
 				// set the profile
+				thisDownload.Lock.Lock()
 				thisDownload.DownloadProfile = *profile
-				dm.Queue(thisDownload.Id)
+				thisDownload.Lock.Unlock()
+
+				dm.Queue(thisDownload)
 
 				succRes := successResponse{Success: true, Message: "download started"}
 				succResB, _ := json.Marshal(succRes)
@@ -277,8 +299,27 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			if thisReq.Action == "change_destination" {
+
+				// nil means (probably) that they chose "don't move" - which is fine,
+				// and maps to nil on the Download (the default state).
+				destination := configService.Config.DestinationCalled(thisReq.Destination)
+
+				thisDownload.Lock.Lock()
+				thisDownload.Destination = destination
+				thisDownload.Lock.Unlock()
+
+				log.Printf("%#v", thisDownload)
+
+				succRes := successResponse{Success: true, Message: "destination changed"}
+				succResB, _ := json.Marshal(succRes)
+				w.Write(succResB)
+				return
+			}
+
 			if thisReq.Action == "stop" {
-				dm.Stop(thisDownload.Id)
+
+				thisDownload.Stop()
 				succRes := successResponse{Success: true, Message: "download stopped"}
 				succResB, _ := json.Marshal(succRes)
 				w.Write(succResB)
@@ -310,14 +351,18 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idString := vars["id"]
 
-	dm.Lock.Lock()
-	defer dm.Lock.Unlock()
-
 	idInt, err := strconv.ParseInt(idString, 10, 32)
 
 	// existing, load it up
 	if err == nil && idInt > 0 {
-		dl := dm.DlById(int(idInt))
+
+		dl, err := dm.GetDlById(int(idInt))
+		if err != nil {
+			log.Printf("not found")
+			w.WriteHeader(404)
+			return
+		}
+
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
@@ -341,6 +386,7 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 
+		log.Printf("popup for %s", url)
 		// check the URL for a sudden but inevitable betrayal
 		if strings.Contains(url[0], configService.Config.Server.Address) {
 			w.WriteHeader(400)
@@ -348,21 +394,28 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// create the record
-
-		newDownloadId := dm.NewDownload(configService.Config, url[0])
-		dm.AppendLog(newDownloadId, "start of log...")
+		// create the new download
+		log.Print("creating")
+		newDL := download.NewDownload(url[0], configService.Config)
+		log.Print("adding")
+		dm.AddDownload(newDL)
+		log.Print("done")
 
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
 		}
 
-		templateData := map[string]interface{}{"Version": versionInfo.GetInfo(), "dl": dm.DlById(newDownloadId), "config": configService.Config, "canStop": download.CanStopDownload}
+		log.Print("lock dl")
+		newDL.Lock.Lock()
+		defer newDL.Lock.Unlock()
+
+		templateData := map[string]interface{}{"Version": versionInfo.GetInfo(), "dl": newDL, "config": configService.Config, "canStop": download.CanStopDownload}
 
 		err = t.ExecuteTemplate(w, "layout", templateData)
 		if err != nil {
 			panic(err)
 		}
+		log.Print("unlock dl because rendered")
 	}
 }

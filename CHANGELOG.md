@@ -8,9 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - When downloading from a playlist, show the total number of videos and how many have been downloaded
 - Show version in web UI
-- Fixes and improvements to capturing output info and showing it in the UI
 - Improve index page (show URL of queued downloads instead of nothing)
 - Add docker support
+- Fixes and improvements to capturing output info and showing it in the UI
+- Fixes to handling of queued downloads
 
 ## [v0.5.5] - 2022-04-09
 
