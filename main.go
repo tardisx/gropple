@@ -25,7 +25,7 @@ var downloadId = 0
 var configService *config.ConfigService
 
 var versionInfo = version.Manager{
-	VersionInfo: version.Info{CurrentVersion: "v0.6.0"},
+	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.1"},
 }
 
 //go:embed web
@@ -236,7 +236,6 @@ func configRESTHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-//
 func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idString := vars["id"]

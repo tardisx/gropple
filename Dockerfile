@@ -1,5 +1,5 @@
 # Start from golang base image
-FROM golang:1.18.2-alpine3.15 as builder
+FROM golang:alpine as builder
 
 # Install git. (alpine image does not have git in it)
 RUN apk update && apk add --no-cache git curl
@@ -34,7 +34,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/gropple .
 
 # Finally our multi-stage to build a small image
 # Start a new stage from scratch
-FROM alpine:3.15.4
+FROM golang:alpine
 
 # Copy the Pre-built binary file
 COPY --from=builder /app/bin/gropple .

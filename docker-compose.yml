@@ -5,8 +5,8 @@ services:
     build: .
     image: tardisx/gropple:latest
     volumes:
-      - /tmp/gropple-config-dir/:/config
-      - /tmp/downloads:/downloads/
+      - ./gropple-config-dir:/config
+      - ./downloads:/downloads/
     restart: always
     ports:
       - "6123:6123"
