@@ -327,7 +327,11 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// just a get, return the object
+		thisDownload.Lock.Lock()
+		defer thisDownload.Lock.Unlock()
+
 		b, _ := json.Marshal(thisDownload)
+
 		w.Write(b)
 		return
 	} else {
@@ -337,9 +341,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 func fetchInfoRESTHandler(w http.ResponseWriter, r *http.Request) {
 
-	dm.Lock.Lock()
-	defer dm.Lock.Unlock()
-	b, _ := json.Marshal(dm.Downloads)
+	b, err := dm.DownloadsAsJSON()
+	if err != nil {
+		panic(err)
+	}
 	w.Write(b)
 }
 

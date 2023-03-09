@@ -1,6 +1,7 @@
 package download
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -59,6 +60,18 @@ func (m *Manager) ManageQueue() {
 
 		time.Sleep(time.Second)
 	}
+}
+
+func (m *Manager) DownloadsAsJSON() ([]byte, error) {
+
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
+	for _, dl := range m.Downloads {
+		dl.Lock.Lock()
+		defer dl.Lock.Unlock()
+	}
+	b, err := json.Marshal(m.Downloads)
+	return b, err
 }
 
 // startQueued starts any downloads that have been queued, we would not exceed
