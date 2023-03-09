@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -201,12 +202,24 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 
 // DetermineConfigDir determines where the config is (or should be) stored.
 func (cs *ConfigService) DetermineConfigDir() {
-	// check current directory first, for a file called gropple.yml
-	_, err := os.Stat("gropple.yml")
+	// check binary path first, for a file called gropple.yml
+	binaryPath := os.Args[0]
+	binaryDir := filepath.Dir(binaryPath)
+	potentialConfigPath := filepath.Join(binaryDir, "gropple.yml")
+
+	_, err := os.Stat(potentialConfigPath)
 	if err == nil {
-		// exists in current directory, use that.
-		cs.ConfigPath = "gropple.yml"
-		return
+		// exists in binary directory, use that
+		// fully qualify, just for clarity in the log
+		config, err := filepath.Abs(potentialConfigPath)
+		if err == nil {
+			log.Printf("found portable config in %s", config)
+			cs.ConfigPath = config
+			return
+		} else {
+			log.Printf("got error when trying to convert config to absolute path: %s", err)
+			log.Print("falling back to using UserConfigDir")
+		}
 	}
 
 	// otherwise fall back to using the UserConfigDir
