@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [v0.6.0] - 2022-04
+## [v0.6.0] - 2023-03-09
 
 - Configurable destinations for downloads
 - When downloading from a playlist, show the total number of videos and how many have been downloaded
@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Add docker support
 - Fixes and improvements to capturing output info and showing it in the UI
 - Fixes to handling of queued downloads
+- Fix portable mode to look in binary directory, not current directory
 
 ## [v0.5.5] - 2022-04-09
 
