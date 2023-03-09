@@ -2,7 +2,11 @@ package download
 
 import (
 	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/tardisx/gropple/config"
 )
 
 func TestUpdateMetadata(t *testing.T) {
@@ -76,79 +80,124 @@ func TestUpdateMetadata(t *testing.T) {
 // [download] 100% of 4.64MiB in 00:00
 // [ffmpeg] Merging formats into "Halo Infinite Flight 4K Gameplay-wi7Agv1M6PY.mp4"
 
-// func TestQueue(t *testing.T) {
-// 	cs := config.ConfigService{}
-// 	cs.LoadTestConfig()
-// 	conf := cs.Config
+func TestQueue(t *testing.T) {
+	cs := config.ConfigService{}
+	cs.LoadTestConfig()
+	conf := cs.Config
 
-// 	new1 := Download{Id: 1, Url: "http://sub.example.org/foo1", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-// 	new2 := Download{Id: 2, Url: "http://sub.example.org/foo2", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-// 	new3 := Download{Id: 3, Url: "http://sub.example.org/foo3", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-// 	new4 := Download{Id: 4, Url: "http://example.org/", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new1 := Download{Id: 1, Url: "http://sub.example.org/foo1", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new2 := Download{Id: 2, Url: "http://sub.example.org/foo2", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new3 := Download{Id: 3, Url: "http://sub.example.org/foo3", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new4 := Download{Id: 4, Url: "http://example.org/", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
 
-// 	dls := Downloads{&new1, &new2, &new3, &new4}
-// 	dls.StartQueued(1)
-// 	time.Sleep(time.Millisecond * 100)
-// 	if dls[0].State == "queued" {
-// 		t.Error("#1 was not started")
-// 	}
-// 	if dls[1].State != "queued" {
-// 		t.Error("#2 is not queued")
-// 	}
-// 	if dls[3].State == "queued" {
-// 		t.Error("#4 is not started")
-// 	}
+	q := Manager{
+		Downloads:    []*Download{},
+		MaxPerDomain: 2,
+		Lock:         sync.Mutex{},
+	}
 
-// 	// this should start no more, as one is still going
-// 	dls.StartQueued(1)
-// 	time.Sleep(time.Millisecond * 100)
-// 	if dls[1].State != "queued" {
-// 		t.Error("#2 was started when it should not be")
-// 	}
+	q.AddDownload(&new1)
+	q.AddDownload(&new2)
+	q.AddDownload(&new3)
+	q.AddDownload(&new4)
 
-// 	dls.StartQueued(2)
-// 	time.Sleep(time.Millisecond * 100)
-// 	if dls[1].State == "queued" {
-// 		t.Error("#2 was not started but it should be")
+	q.startQueued(1)
 
-// 	}
+	// two should start, one from each of the two domains
+	time.Sleep(time.Millisecond * 100)
+	if q.Downloads[0].State != "downloading" {
+		t.Errorf("#1 was not downloading - %s instead ", q.Downloads[0].State)
+	}
+	if q.Downloads[1].State != "queued" {
+		t.Errorf("#2 is not queued - %s instead", q.Downloads[1].State)
+	}
+	if q.Downloads[2].State != "queued" {
+		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+	}
+	if q.Downloads[3].State != "downloading" {
+		t.Errorf("#4 is not downloading - %s instead", q.Downloads[3].State)
+	}
 
-// 	dls.StartQueued(2)
-// 	time.Sleep(time.Millisecond * 100)
-// 	if dls[3].State == "queued" {
-// 		t.Error("#4 was not started but it should be")
-// 	}
+	// this should start no more, as one is still going
+	q.startQueued(1)
+	time.Sleep(time.Millisecond * 100)
+	if q.Downloads[0].State != "downloading" {
+		t.Errorf("#1 was not downloading - %s instead ", q.Downloads[0].State)
+	}
+	if q.Downloads[1].State != "queued" {
+		t.Errorf("#2 is not queued - %s instead", q.Downloads[1].State)
+	}
+	if q.Downloads[2].State != "queued" {
+		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+	}
+	if q.Downloads[3].State != "downloading" {
+		t.Errorf("#4 is not downloading - %s instead", q.Downloads[3].State)
+	}
 
-// 	// reset them all
-// 	dls[0].State = "queued"
-// 	dls[1].State = "queued"
-// 	dls[2].State = "queued"
-// 	dls[3].State = "queued"
+	// wait until the two finish, check
+	time.Sleep(time.Second * 5.0)
+	if q.Downloads[0].State != "complete" {
+		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+	}
+	if q.Downloads[1].State != "queued" {
+		t.Errorf("#2 is not queued - %s instead", q.Downloads[1].State)
+	}
+	if q.Downloads[2].State != "queued" {
+		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+	}
+	if q.Downloads[3].State != "complete" {
+		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+	}
 
-// 	dls.StartQueued(0)
-// 	time.Sleep(time.Millisecond * 100)
+	// this should start one more, as one is still going
+	q.startQueued(1)
+	time.Sleep(time.Millisecond * 100)
+	if q.Downloads[0].State != "complete" {
+		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+	}
+	if q.Downloads[1].State != "downloading" {
+		t.Errorf("#2 is not downloading - %s instead", q.Downloads[1].State)
+	}
+	if q.Downloads[2].State != "queued" {
+		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+	}
+	if q.Downloads[3].State != "complete" {
+		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+	}
 
-// 	// they should all be going
-// 	if dls[0].State == "queued" || dls[1].State == "queued" || dls[2].State == "queued" || dls[3].State == "queued" {
-// 		t.Error("none should be queued")
-// 	}
+	// this should start no more, as one is still going
+	q.startQueued(1)
+	time.Sleep(time.Millisecond * 100)
+	if q.Downloads[0].State != "complete" {
+		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+	}
+	if q.Downloads[1].State != "downloading" {
+		t.Errorf("#2 is not downloading - %s instead", q.Downloads[1].State)
+	}
+	if q.Downloads[2].State != "queued" {
+		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+	}
+	if q.Downloads[3].State != "complete" {
+		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+	}
 
-// 	// reset them all
-// 	dls[0].State = "queued"
-// 	dls[1].State = "queued"
-// 	dls[2].State = "queued"
-// 	dls[3].State = "queued"
+	// but if we allow two per domain, the other queued one will start
+	q.startQueued(2)
+	time.Sleep(time.Millisecond * 100)
+	if q.Downloads[0].State != "complete" {
+		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+	}
+	if q.Downloads[1].State != "downloading" {
+		t.Errorf("#2 is not downloading - %s instead", q.Downloads[1].State)
+	}
+	if q.Downloads[2].State != "downloading" {
+		t.Errorf("#3 is not downloading - %s instead", q.Downloads[2].State)
+	}
+	if q.Downloads[3].State != "complete" {
+		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+	}
 
-// 	dls.StartQueued(2)
-// 	time.Sleep(time.Millisecond * 100)
-
-// 	// first two should be running, third not (same domain) and 4th running (different domain)
-// 	if dls[0].State == "queued" || dls[1].State == "queued" || dls[2].State != "queued" || dls[3].State == "queued" {
-// 		t.Error("incorrect queued")
-
-// 	}
-
-// }
+}
 
 func TestUpdateMetadataPlaylist(t *testing.T) {
 
