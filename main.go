@@ -25,7 +25,7 @@ var downloadId = 0
 var configService *config.ConfigService
 
 var versionInfo = version.Manager{
-	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.1"},
+	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.2"},
 }
 
 //go:embed web
@@ -112,8 +112,8 @@ func main() {
 	go dm.ManageQueue()
 
 	urls := []string{
-		"https://www.youtube.com/watch?v=qG_rRkuGBW8",
-		"https://www.youtube.com/watch?v=ZUzhZpQAU40",
+		// "https://www.youtube.com/watch?v=qG_rRkuGBW8",
+		// "https://www.youtube.com/watch?v=ZUzhZpQAU40",
 		// "https://www.youtube.com/watch?v=kVxM3eRWGak",
 		// "https://www.youtube.com/watch?v=pl-y9869y0w",
 		// "https://www.youtube.com/watch?v=Uw4NEPE4l3A",
