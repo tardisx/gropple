@@ -153,7 +153,6 @@ func (m *Manager) AddDownload(dl *Download) {
 	m.Lock.Lock()
 	defer m.Lock.Unlock()
 	m.Downloads = append(m.Downloads, dl)
-	return
 }
 
 // func (dl *Download) AppendLog(text string) {
