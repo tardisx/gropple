@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## [v0.6.0] - 2022-04
 
+- Configurable destinations for downloads
 - When downloading from a playlist, show the total number of videos and how many have been downloaded
 - Show version in web UI
 - Improve index page (show URL of queued downloads instead of nothing)
