@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ## [v0.6.0] - 2023-03-09
 
 - Configurable destinations for downloads
+  - Multiple destination directories can be configured
+  - When queueing a download, an alternate destination can be selected
 - When downloading from a playlist, show the total number of videos and how many have been downloaded
 - Show version in web UI
 - Improve index page (show URL of queued downloads instead of nothing)
@@ -14,7 +16,6 @@ All notable changes to this project will be documented in this file.
 - Fixes and improvements to capturing output info and showing it in the UI
 - Fixes to handling of queued downloads
 - Fix portable mode to look in binary directory, not current directory
-- Allow custom destinations to be configured, and chosen on a per-download basis
 
 ## [v0.5.5] - 2022-04-09
 
