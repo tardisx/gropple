@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Fixes and improvements to capturing output info and showing it in the UI
 - Fixes to handling of queued downloads
 - Fix portable mode to look in binary directory, not current directory
+- Allow custom destinations to be configured, and chosen on a per-download basis
 
 ## [v0.5.5] - 2022-04-09
 

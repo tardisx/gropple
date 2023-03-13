@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ type Download struct {
 	PopupUrl        string                 `json:"popup_url"`
 	Process         *os.Process            `json:"-"`
 	ExitCode        int                    `json:"exit_code"`
-	State           string                 `json:"state"`
+	State           State                  `json:"state"`
 	DownloadProfile config.DownloadProfile `json:"download_profile"`
 	Destination     *config.Destination    `json:"destination"`
 	Finished        bool                   `json:"finished"`
@@ -46,6 +47,18 @@ type Manager struct {
 	Lock         sync.Mutex
 }
 
+type State string
+
+const (
+	STATE_PREPARING            State = "Preparing to start"
+	STATE_QUEUED                     = "Queued"
+	STATE_DOWNLOADING                = "Downloading"
+	STATE_DOWNLOADING_METADATA       = "Downloading metadata"
+	STATE_FAILED                     = "Failed"
+	STATE_COMPLETE                   = "Complete"
+	STATE_MOVED                      = "Moved"
+)
+
 var CanStopDownload = false
 
 var downloadId int32 = 0
@@ -55,6 +68,7 @@ func (m *Manager) ManageQueue() {
 		m.Lock.Lock()
 
 		m.startQueued(m.MaxPerDomain)
+		m.moveToDest()
 		// m.cleanup()
 		m.Lock.Unlock()
 
@@ -74,6 +88,32 @@ func (m *Manager) DownloadsAsJSON() ([]byte, error) {
 	return b, err
 }
 
+func (m *Manager) moveToDest() {
+
+	// move any downloads that are complete and have a dest
+	for _, dl := range m.Downloads {
+
+		dl.Lock.Lock()
+		if dl.Destination != nil && dl.State == STATE_COMPLETE {
+			dl.State = STATE_MOVED
+			for _, fn := range dl.Files {
+				src := filepath.Join(dl.Config.Server.DownloadPath, fn)
+				dst := filepath.Join(dl.Destination.Path, fn)
+				err := os.Rename(src, dst)
+				if err != nil {
+					log.Printf("%s", err)
+					dl.Log = append(dl.Log, fmt.Sprintf("Could not move %s to %s - %s", fn, dl.Destination.Path, err))
+					break
+				} else {
+					dl.Log = append(dl.Log, fmt.Sprintf("Moved %s to %s", fn, dl.Destination.Path))
+
+				}
+			}
+		}
+		dl.Lock.Unlock()
+	}
+}
+
 // startQueued starts any downloads that have been queued, we would not exceed
 // maxRunning. If maxRunning is 0, there is no limit.
 func (m *Manager) startQueued(maxRunning int) {
@@ -83,7 +123,7 @@ func (m *Manager) startQueued(maxRunning int) {
 	for _, dl := range m.Downloads {
 		dl.Lock.Lock()
 
-		if dl.State == "downloading" || dl.State == "preparing to start" {
+		if dl.State == STATE_DOWNLOADING || dl.State == STATE_PREPARING {
 			active[dl.domain()]++
 		}
 		dl.Lock.Unlock()
@@ -94,8 +134,8 @@ func (m *Manager) startQueued(maxRunning int) {
 
 		dl.Lock.Lock()
 
-		if dl.State == "queued" && (maxRunning == 0 || active[dl.domain()] < maxRunning) {
-			dl.State = "preparing to start"
+		if dl.State == STATE_QUEUED && (maxRunning == 0 || active[dl.domain()] < maxRunning) {
+			dl.State = STATE_PREPARING
 			active[dl.domain()]++
 			log.Printf("Starting download for id:%d (%s)", dl.Id, dl.Url)
 
@@ -144,7 +184,18 @@ func (m *Manager) GetDlById(id int) (*Download, error) {
 func (m *Manager) Queue(dl *Download) {
 	dl.Lock.Lock()
 	defer dl.Lock.Unlock()
-	dl.State = "queued"
+	dl.State = STATE_QUEUED
+}
+
+func (m *Manager) ChangeDestination(dl *Download, dest *config.Destination) {
+	dl.Lock.Lock()
+	// we can only change destination is certain cases...
+	if dl.State != STATE_FAILED && dl.State != STATE_MOVED {
+		dl.Destination = dest
+	}
+
+	dl.Lock.Unlock()
+
 }
 
 func NewDownload(url string, conf *config.Config) *Download {
@@ -206,7 +257,7 @@ func (dl *Download) domain() string {
 func (dl *Download) Begin() {
 	dl.Lock.Lock()
 
-	dl.State = "downloading"
+	dl.State = STATE_DOWNLOADING
 	cmdSlice := []string{}
 	cmdSlice = append(cmdSlice, dl.DownloadProfile.Args...)
 
@@ -220,7 +271,7 @@ func (dl *Download) Begin() {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		dl.State = "failed"
+		dl.State = STATE_FAILED
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stdout pipe: %v", err))
@@ -231,7 +282,7 @@ func (dl *Download) Begin() {
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		dl.State = "failed"
+		dl.State = STATE_FAILED
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stderr pipe: %v", err))
@@ -243,7 +294,7 @@ func (dl *Download) Begin() {
 	log.Printf("Executing command: %v", cmd)
 	err = cmd.Start()
 	if err != nil {
-		dl.State = "failed"
+		dl.State = STATE_FAILED
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error starting command '%s': %v", dl.DownloadProfile.Command, err))
@@ -276,13 +327,13 @@ func (dl *Download) Begin() {
 
 	log.Printf("Process finished for id: %d (%v)", dl.Id, cmd)
 
-	dl.State = "complete"
+	dl.State = STATE_COMPLETE
 	dl.Finished = true
 	dl.FinishedTS = time.Now()
 	dl.ExitCode = cmd.ProcessState.ExitCode()
 
 	if dl.ExitCode != 0 {
-		dl.State = "failed"
+		dl.State = STATE_FAILED
 	}
 	dl.Lock.Unlock()
 
@@ -330,7 +381,7 @@ func (dl *Download) updateMetadata(s string) {
 	matches := etaRE.FindStringSubmatch(s)
 	if len(matches) == 2 {
 		dl.Eta = matches[1]
-		dl.State = "downloading"
+		dl.State = STATE_DOWNLOADING
 
 	}
 
@@ -391,7 +442,7 @@ func (dl *Download) updateMetadata(s string) {
 	metadataDL := regexp.MustCompile(`Downloading JSON metadata page (\d+)`)
 	matches = metadataDL.FindStringSubmatch(s)
 	if len(matches) == 2 {
-		dl.State = "Downloading metadata, page " + matches[1]
+		dl.State = STATE_DOWNLOADING_METADATA
 	}
 
 	// [FixupM3u8] Fixing MPEG-TS in MP4 container of "file [-168849776_456239489].mp4"

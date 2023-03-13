@@ -285,12 +285,9 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 				// nil means (probably) that they chose "don't move" - which is fine,
 				// and maps to nil on the Download (the default state).
 				destination := configService.Config.DestinationCalled(thisReq.Destination)
+				dm.ChangeDestination(thisDownload, destination)
 
-				thisDownload.Lock.Lock()
-				thisDownload.Destination = destination
-				thisDownload.Lock.Unlock()
-
-				log.Printf("%#v", thisDownload)
+				//				log.Printf("%#v", thisDownload)
 
 				succRes := successResponse{Success: true, Message: "destination changed"}
 				succResB, _ := json.Marshal(succRes)
