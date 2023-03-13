@@ -21,11 +21,10 @@ import (
 )
 
 var dm *download.Manager
-var downloadId = 0
 var configService *config.ConfigService
 
 var versionInfo = version.Manager{
-	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.2"},
+	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.3"},
 }
 
 //go:embed web
