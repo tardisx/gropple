@@ -85,10 +85,20 @@ func TestQueue(t *testing.T) {
 	cs.LoadTestConfig()
 	conf := cs.Config
 
-	new1 := Download{Id: 1, Url: "http://sub.example.org/foo1", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new2 := Download{Id: 2, Url: "http://sub.example.org/foo2", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new3 := Download{Id: 3, Url: "http://sub.example.org/foo3", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
-	new4 := Download{Id: 4, Url: "http://example.org/", State: "queued", DownloadProfile: conf.DownloadProfiles[0], Config: conf}
+	new1 := NewDownload("http://sub.example.org/foo1", conf)
+	new2 := NewDownload("http://sub.example.org/foo2", conf)
+	new3 := NewDownload("http://sub.example.org/foo3", conf)
+	new4 := NewDownload("http://example.org/", conf)
+
+	// pretend the user chose a profile for each
+	new1.DownloadProfile = *conf.ProfileCalled("test profile")
+	new2.DownloadProfile = *conf.ProfileCalled("test profile")
+	new3.DownloadProfile = *conf.ProfileCalled("test profile")
+	new4.DownloadProfile = *conf.ProfileCalled("test profile")
+	new1.State = STATE_QUEUED
+	new2.State = STATE_QUEUED
+	new3.State = STATE_QUEUED
+	new4.State = STATE_QUEUED
 
 	q := Manager{
 		Downloads:    []*Download{},
@@ -96,105 +106,129 @@ func TestQueue(t *testing.T) {
 		Lock:         sync.Mutex{},
 	}
 
-	q.AddDownload(&new1)
-	q.AddDownload(&new2)
-	q.AddDownload(&new3)
-	q.AddDownload(&new4)
+	q.AddDownload(new1)
+	q.AddDownload(new2)
+	q.AddDownload(new3)
+	q.AddDownload(new4)
 
 	q.startQueued(1)
 
 	// two should start, one from each of the two domains
 	time.Sleep(time.Millisecond * 100)
-	if q.Downloads[0].State != "downloading" {
+	if q.Downloads[0].State != STATE_DOWNLOADING {
 		t.Errorf("#1 was not downloading - %s instead ", q.Downloads[0].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[1].State != "queued" {
+	if q.Downloads[1].State != STATE_QUEUED {
 		t.Errorf("#2 is not queued - %s instead", q.Downloads[1].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[2].State != "queued" {
+	if q.Downloads[2].State != STATE_QUEUED {
 		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[3].State != "downloading" {
+	if q.Downloads[3].State != STATE_DOWNLOADING {
 		t.Errorf("#4 is not downloading - %s instead", q.Downloads[3].State)
+		t.Log(q.String())
 	}
 
 	// this should start no more, as one is still going
 	q.startQueued(1)
 	time.Sleep(time.Millisecond * 100)
-	if q.Downloads[0].State != "downloading" {
+	if q.Downloads[0].State != STATE_DOWNLOADING {
 		t.Errorf("#1 was not downloading - %s instead ", q.Downloads[0].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[1].State != "queued" {
+	if q.Downloads[1].State != STATE_QUEUED {
 		t.Errorf("#2 is not queued - %s instead", q.Downloads[1].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[2].State != "queued" {
+	if q.Downloads[2].State != STATE_QUEUED {
 		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[3].State != "downloading" {
+	if q.Downloads[3].State != STATE_DOWNLOADING {
 		t.Errorf("#4 is not downloading - %s instead", q.Downloads[3].State)
+		t.Log(q.String())
 	}
 
 	// wait until the two finish, check
 	time.Sleep(time.Second * 5.0)
-	if q.Downloads[0].State != "complete" {
+	if q.Downloads[0].State != STATE_COMPLETE {
 		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[1].State != "queued" {
+	if q.Downloads[1].State != STATE_QUEUED {
 		t.Errorf("#2 is not queued - %s instead", q.Downloads[1].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[2].State != "queued" {
+	if q.Downloads[2].State != STATE_QUEUED {
 		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[3].State != "complete" {
+	if q.Downloads[3].State != STATE_COMPLETE {
 		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+		t.Log(q.String())
 	}
 
 	// this should start one more, as one is still going
 	q.startQueued(1)
 	time.Sleep(time.Millisecond * 100)
-	if q.Downloads[0].State != "complete" {
+	if q.Downloads[0].State != STATE_COMPLETE {
 		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[1].State != "downloading" {
+	if q.Downloads[1].State != STATE_DOWNLOADING {
 		t.Errorf("#2 is not downloading - %s instead", q.Downloads[1].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[2].State != "queued" {
+	if q.Downloads[2].State != STATE_QUEUED {
 		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[3].State != "complete" {
+	if q.Downloads[3].State != STATE_COMPLETE {
 		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+		t.Log(q.String())
 	}
 
 	// this should start no more, as one is still going
 	q.startQueued(1)
 	time.Sleep(time.Millisecond * 100)
-	if q.Downloads[0].State != "complete" {
+	if q.Downloads[0].State != STATE_COMPLETE {
 		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[1].State != "downloading" {
+	if q.Downloads[1].State != STATE_DOWNLOADING {
 		t.Errorf("#2 is not downloading - %s instead", q.Downloads[1].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[2].State != "queued" {
+	if q.Downloads[2].State != STATE_QUEUED {
 		t.Errorf("#3 is not queued - %s instead", q.Downloads[2].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[3].State != "complete" {
+	if q.Downloads[3].State != STATE_COMPLETE {
 		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+		t.Log(q.String())
 	}
 
 	// but if we allow two per domain, the other queued one will start
 	q.startQueued(2)
 	time.Sleep(time.Millisecond * 100)
-	if q.Downloads[0].State != "complete" {
+	if q.Downloads[0].State != STATE_COMPLETE {
 		t.Errorf("#1 was not complete - %s instead ", q.Downloads[0].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[1].State != "downloading" {
+	if q.Downloads[1].State != STATE_DOWNLOADING {
 		t.Errorf("#2 is not downloading - %s instead", q.Downloads[1].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[2].State != "downloading" {
+	if q.Downloads[2].State != STATE_DOWNLOADING {
 		t.Errorf("#3 is not downloading - %s instead", q.Downloads[2].State)
+		t.Log(q.String())
 	}
-	if q.Downloads[3].State != "complete" {
+	if q.Downloads[3].State != STATE_COMPLETE {
 		t.Errorf("#4 is not complete - %s instead", q.Downloads[3].State)
+		t.Log(q.String())
 	}
 
 }

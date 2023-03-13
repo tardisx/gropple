@@ -47,16 +47,30 @@ type Manager struct {
 	Lock         sync.Mutex
 }
 
+func (m *Manager) String() string {
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
+	out := fmt.Sprintf("Max per domain: %d, downloads: %d\n", m.MaxPerDomain, len(m.Downloads))
+
+	for _, dl := range m.Downloads {
+		out = out + fmt.Sprintf("%3d: (%10s) %30s\n", dl.Id, dl.State, dl.Url)
+	}
+
+	return out
+
+}
+
 type State string
 
 const (
 	STATE_PREPARING            State = "Preparing to start"
-	STATE_QUEUED                     = "Queued"
-	STATE_DOWNLOADING                = "Downloading"
-	STATE_DOWNLOADING_METADATA       = "Downloading metadata"
-	STATE_FAILED                     = "Failed"
-	STATE_COMPLETE                   = "Complete"
-	STATE_MOVED                      = "Moved"
+	STATE_CHOOSE_PROFILE       State = "Choose Profile"
+	STATE_QUEUED               State = "Queued"
+	STATE_DOWNLOADING          State = "Downloading"
+	STATE_DOWNLOADING_METADATA State = "Downloading metadata"
+	STATE_FAILED               State = "Failed"
+	STATE_COMPLETE             State = "Complete"
+	STATE_MOVED                State = "Moved"
 )
 
 var CanStopDownload = false
@@ -204,7 +218,7 @@ func NewDownload(url string, conf *config.Config) *Download {
 		Id:       int(downloadId),
 		Url:      url,
 		PopupUrl: fmt.Sprintf("/fetch/%d", int(downloadId)),
-		State:    "choose profile",
+		State:    STATE_CHOOSE_PROFILE,
 		Files:    []string{},
 		Log:      []string{},
 		Config:   conf,
