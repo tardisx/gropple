@@ -12,8 +12,8 @@ All notable changes to this project will be documented in this file.
 - When downloading from a playlist, show the total number of videos and how many have been downloaded
 - Show version in web UI
 - Improve index page (show URL of queued downloads instead of nothing)
-- Add docker support
 - Fixes and improvements to capturing output info and showing it in the UI
+- Show all log output in the popup
 - Fixes to handling of queued downloads
 - Fix portable mode to look in binary directory, not current directory
 - Automatically cleanup download list, removing old entries automatically

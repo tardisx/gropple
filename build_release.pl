@@ -40,6 +40,7 @@ foreach my $type (keys %build) {
 }
 
 # now docker
+exit 0;
 $ENV{VERSION}="$version";
 system "docker-compose", "-f", "docker-compose.build.yml", "build";
 system "docker", "tag", "tardisx/gropple:$version", "tardisx/gropple:latest";
