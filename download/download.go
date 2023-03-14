@@ -83,7 +83,7 @@ func (m *Manager) ManageQueue() {
 
 		m.startQueued(m.MaxPerDomain)
 		m.moveToDest()
-		// m.cleanup()
+		m.cleanup()
 		m.Lock.Unlock()
 
 		time.Sleep(time.Second)
@@ -167,16 +167,17 @@ func (m *Manager) startQueued(maxRunning int) {
 }
 
 // cleanup removes old downloads from the list. Hardcoded to remove them one hour
-// completion.
-func (m *Manager) XXXcleanup() {
+// completion. Expects the Manager to be locked.
+func (m *Manager) cleanup() {
 	newDLs := []*Download{}
 	for _, dl := range m.Downloads {
-
+		dl.Lock.Lock()
 		if dl.Finished && time.Since(dl.FinishedTS) > time.Duration(time.Hour) {
 			// do nothing
 		} else {
 			newDLs = append(newDLs, dl)
 		}
+		dl.Lock.Unlock()
 
 	}
 	m.Downloads = newDLs
