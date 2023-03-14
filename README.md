@@ -99,6 +99,10 @@ Many download problems are diagnosable via the log - check in the popup window
 and scroll the log down to the bottom. The most common problem is that `yt-dlp`
 cannot be found, or its dependency (like `ffmpeg`) cannot be found on your path.
 
+Gropple only calls external tools like `yt-dlp` to do the downloading. If you
+are having problems downloading from a site, make sure that `yt-dlp` is updated
+to the latest version (`yd-dlp -U`).
+
 For other problems, please file an issue on github.
 
 ## TODO
