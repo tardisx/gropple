@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
 ## [v0.6.0] - 2023-03-15
 
 - Configurable destinations for downloads

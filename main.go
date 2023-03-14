@@ -24,7 +24,7 @@ var dm *download.Manager
 var configService *config.ConfigService
 
 var versionInfo = version.Manager{
-	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.3"},
+	VersionInfo: version.Info{CurrentVersion: "v0.6.0-alpha.4"},
 }
 
 //go:embed web
