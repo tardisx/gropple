@@ -26,7 +26,6 @@ type Manager struct {
 }
 
 func (m *Manager) GetInfo() Info {
-	// log.Print("getting info... b4 lock")
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
