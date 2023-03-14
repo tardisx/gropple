@@ -410,18 +410,14 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// create the new download
-		log.Print("creating")
 		newDL := download.NewDownload(url[0], configService.Config)
-		log.Print("adding")
 		dm.AddDownload(newDL)
-		log.Print("done")
 
 		t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
 		if err != nil {
 			panic(err)
 		}
 
-		log.Print("lock dl")
 		newDL.Lock.Lock()
 		defer newDL.Lock.Unlock()
 
@@ -431,6 +427,5 @@ func fetchHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		log.Print("unlock dl because rendered")
 	}
 }
