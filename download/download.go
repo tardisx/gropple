@@ -250,7 +250,10 @@ func (dl *Download) Stop() {
 	dl.Lock.Lock()
 	defer dl.Lock.Unlock()
 	dl.Log = append(dl.Log, "aborted by user")
-	dl.Process.Kill()
+	err := dl.Process.Kill()
+	if err != nil {
+		log.Printf("could not send kill to process: %s", err)
+	}
 }
 
 // domain returns a domain for this Download. Download should be locked.
@@ -335,19 +338,30 @@ func (dl *Download) Begin() {
 	}()
 
 	wg.Wait()
-	cmd.Wait()
 
+	err = cmd.Wait()
 	dl.Lock.Lock()
 
-	log.Printf("Process finished for id: %d (%v)", dl.Id, cmd)
+	if err != nil {
+		log.Printf("process failed for id: %d: %s", dl.Id, err)
 
-	dl.State = STATE_COMPLETE
-	dl.Finished = true
-	dl.FinishedTS = time.Now()
-	dl.ExitCode = cmd.ProcessState.ExitCode()
-
-	if dl.ExitCode != 0 {
 		dl.State = STATE_FAILED
+		dl.Finished = true
+		dl.FinishedTS = time.Now()
+		dl.ExitCode = cmd.ProcessState.ExitCode()
+
+	} else {
+
+		log.Printf("process finished for id: %d (%v)", dl.Id, cmd)
+
+		dl.State = STATE_COMPLETE
+		dl.Finished = true
+		dl.FinishedTS = time.Now()
+		dl.ExitCode = cmd.ProcessState.ExitCode()
+
+		if dl.ExitCode != 0 {
+			dl.State = STATE_FAILED
+		}
 	}
 	dl.Lock.Unlock()
 

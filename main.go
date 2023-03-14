@@ -101,7 +101,10 @@ func main() {
 	// check for a new version every 4 hours
 	go func() {
 		for {
-			versionInfo.UpdateGitHubVersion()
+			err := versionInfo.UpdateGitHubVersion()
+			if err != nil {
+				log.Printf("could not get version info: %s", err)
+			}
 			time.Sleep(time.Hour * 4)
 		}
 	}()
@@ -120,7 +123,10 @@ func main() {
 func versionRESTHandler(w http.ResponseWriter, r *http.Request) {
 	if versionInfo.GetInfo().GithubVersionFetched {
 		b, _ := json.Marshal(versionInfo.GetInfo())
-		w.Write(b)
+		_, err := w.Write(b)
+		if err != nil {
+			log.Printf("could not write to client: %s", err)
+		}
 	} else {
 		w.WriteHeader(400)
 	}
@@ -172,7 +178,10 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		io.Copy(w, f)
+		_, err = io.Copy(w, f)
+		if err != nil {
+			log.Printf("could not write to client: %s", err)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNotFound)
@@ -208,13 +217,19 @@ func configRESTHandler(w http.ResponseWriter, r *http.Request) {
 			errorRes := errorResponse{Success: false, Error: err.Error()}
 			errorResB, _ := json.Marshal(errorRes)
 			w.WriteHeader(400)
-			w.Write(errorResB)
+			_, err = w.Write(errorResB)
+			if err != nil {
+				log.Printf("could not write to client: %s", err)
+			}
 			return
 		}
 		configService.WriteConfig()
 	}
 	b, _ := json.Marshal(configService.Config)
-	w.Write(b)
+	_, err := w.Write(b)
+	if err != nil {
+		log.Printf("could not write config to client: %s", err)
+	}
 }
 
 func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +271,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 				errorRes := errorResponse{Success: false, Error: err.Error()}
 				errorResB, _ := json.Marshal(errorRes)
 				w.WriteHeader(400)
-				w.Write(errorResB)
+				_, err = w.Write(errorResB)
+				if err != nil {
+					log.Printf("could not write to client: %s", err)
+				}
 				return
 			}
 
@@ -275,7 +293,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 				succRes := successResponse{Success: true, Message: "download started"}
 				succResB, _ := json.Marshal(succRes)
-				w.Write(succResB)
+				_, err = w.Write(succResB)
+				if err != nil {
+					log.Printf("could not write to client: %s", err)
+				}
 				return
 			}
 
@@ -290,7 +311,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 				succRes := successResponse{Success: true, Message: "destination changed"}
 				succResB, _ := json.Marshal(succRes)
-				w.Write(succResB)
+				_, err = w.Write(succResB)
+				if err != nil {
+					log.Printf("could not write to client: %s", err)
+				}
 				return
 			}
 
@@ -299,7 +323,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 				thisDownload.Stop()
 				succRes := successResponse{Success: true, Message: "download stopped"}
 				succResB, _ := json.Marshal(succRes)
-				w.Write(succResB)
+				_, err = w.Write(succResB)
+				if err != nil {
+					log.Printf("could not write to client: %s", err)
+				}
 				return
 			}
 		}
@@ -310,7 +337,10 @@ func fetchInfoOneRESTHandler(w http.ResponseWriter, r *http.Request) {
 
 		b, _ := json.Marshal(thisDownload)
 
-		w.Write(b)
+		_, err = w.Write(b)
+		if err != nil {
+			log.Printf("could not write to client: %s", err)
+		}
 		return
 	} else {
 		http.NotFound(w, r)
@@ -323,7 +353,10 @@ func fetchInfoRESTHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	w.Write(b)
+	_, err = w.Write(b)
+	if err != nil {
+		log.Printf("could not write to client: %s", err)
+	}
 }
 
 func fetchHandler(w http.ResponseWriter, r *http.Request) {

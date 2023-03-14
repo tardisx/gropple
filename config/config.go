@@ -94,7 +94,6 @@ func (cs *ConfigService) LoadDefaultConfig() {
 
 	cs.Config = &defaultConfig
 
-	return
 }
 
 func (c *Config) ProfileCalled(name string) *DownloadProfile {
@@ -319,6 +318,9 @@ func (cs *ConfigService) WriteConfig() {
 	}
 	defer file.Close()
 
-	file.Write(s)
+	_, err = file.Write(s)
+	if err != nil {
+		log.Fatalf("could not write config file %s: %s", path, err)
+	}
 	file.Close()
 }
