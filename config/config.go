@@ -96,6 +96,7 @@ func (cs *ConfigService) LoadDefaultConfig() {
 
 }
 
+// ProfileCalled returns the corresponding profile, or nil if it does not exist
 func (c *Config) ProfileCalled(name string) *DownloadProfile {
 	for _, p := range c.DownloadProfiles {
 		if p.Name == name {
@@ -105,6 +106,7 @@ func (c *Config) ProfileCalled(name string) *DownloadProfile {
 	return nil
 }
 
+// DestinationCalled returns the corresponding destination, or nil if it does not exist
 func (c *Config) DestinationCalled(name string) *Destination {
 	for _, p := range c.Destinations {
 		if p.Name == name {
