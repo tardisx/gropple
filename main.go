@@ -51,6 +51,7 @@ func main() {
 	// create the download manager
 	downloadManager := &download.Manager{MaxPerDomain: configService.Config.Server.MaximumActiveDownloads}
 
+	// create the web handlers
 	r := web.CreateRoutes(configService, downloadManager, versionInfo)
 
 	srv := &http.Server{
