@@ -44,9 +44,7 @@ func main() {
 	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.GetInfo().CurrentVersion)
 
 	var configPath string
-	var testDownloads bool
 	flag.StringVar(&configPath, "config-path", "", "path to config file")
-	flag.BoolVar(&testDownloads, "test-downloads", false, "queue up several downloads for testing purposes")
 
 	flag.Parse()
 
@@ -76,31 +74,6 @@ func main() {
 
 	// create the download manager
 	dm = &download.Manager{MaxPerDomain: configService.Config.Server.MaximumActiveDownloads}
-
-	if testDownloads {
-		dm.AddDownload(download.NewDownload("https://www.youtube.com/watch?v=tyixMpuGEL8", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.youtube.com/watch?v=VnxbkH_3E_4", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.youtube.com/watch?v=VStscvYLYLs", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.youtube.com/watch?v=vYMiSz-WlEY", configService.Config))
-
-		dm.AddDownload(download.NewDownload("https://www.gamespot.com/videos/survival-fps-how-metro-2033-solidified-a-subgenre/2300-6408243/", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.gamespot.com/videos/dirt-3-right-back-where-you-started-gameplay-movie/2300-6314712/", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.gamespot.com/videos/the-b-list-driver-san-francisco/2300-6405593/", configService.Config))
-
-		dm.AddDownload(download.NewDownload("https://www.imdb.com/video/vi1914750745/?listId=ls053181649&ref_=hm_hp_i_hero-video-1_1", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.imdb.com/video/vi3879585561/?listId=ls053181649&ref_=vp_pl_ap_6", configService.Config))
-		dm.AddDownload(download.NewDownload("https://www.imdb.com/video/vi54445849/?listId=ls053181649&ref_=vp_nxt_btn", configService.Config))
-
-		if len(configService.Config.DownloadProfiles) == 0 {
-			panic("no profiles installed - cannot add test downloads")
-		}
-		profile := configService.Config.ProfileCalled(configService.Config.DownloadProfiles[0].Name)
-		for i := range dm.Downloads {
-			// set the profile and queue it
-			dm.Downloads[i].DownloadProfile = *profile
-			dm.Queue(dm.Downloads[i])
-		}
-	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", homeHandler)
@@ -140,6 +113,8 @@ func main() {
 	// start downloading queued downloads when slots available, and clean up
 	// old entries
 	go dm.ManageQueue()
+
+	// add testdata if compiled with the '-tags testdata' flag
 	dm.AddStressTestData(configService)
 
 	log.Printf("Visit %s for details on installing the bookmarklet and to check status", configService.Config.Server.Address)
