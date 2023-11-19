@@ -1,12 +1,16 @@
 {{ define "content" }}
-    <div id="layout" class="pure-g pure-u-1" x-data="popup_create()" x-init="">
+    <div id="layout" class="pure-g pure-u-1" x-data="popup_create()" >
+
         <h2>Download create</h2>
         <p>URL: <tt>{{ .url }}</tt></p>
+
+        <p class="error"  x-show="error_message"  x-transition.duration.500ms x-text="error_message"></p>
+
         <table class="pure-table" >
             <tr>
                 <th>profile</th>
                 <td>
-                    <select x-bind:disabled="profile_chosen" x-on:change="update_profile()" class="pure-input-1-2" x-model="profile_chosen">
+                    <select class="pure-input-1-2" x-model="profile_chosen">
                         <option value="">choose a profile</option>
                     {{ range $i := .config.DownloadProfiles }}
                         <option>{{ $i.Name }}</option>
@@ -17,8 +21,8 @@
             <tr>
                 <th>destination</th>
                 <td>
-                    <select  x-on:change="update_destination()" class="pure-input-1-2" x-model="destination_chosen">
-                        <option value="-">leave in {{ .config.Server.DownloadPath }}</option>
+                    <select  class="pure-input-1-2" x-model="destination_chosen">
+                        <option value="">leave in {{ .config.Server.DownloadPath }}</option>
                     {{ range $i := .config.Destinations }}
                         <option>{{ $i.Name }}</option>
                     {{ end }}
@@ -39,18 +43,28 @@
 <script>
     function popup_create() {
         return {
-            profile_chosen: null,
-            destination_chosen: null,
+            profile_chosen: "",
+            destination_chosen: "",
+            error_message: "",
             start() {
                 let op = {
                    method: 'POST',
-                   body: JSON.stringify({action: 'start'}),
+                   body: JSON.stringify({action: 'start', url: '{{ .url }}', profile: this.profile_chosen, destination: this.destination_chosen}),
                    headers: { 'Content-Type': 'application/json' }
                 };
-                fetch('/rest/fetch', op)
+                fetch('/fetch', op)
                 .then(response => response.json())
-                .then(info => {
-                    console.log(info)
+                .then(response => {
+                    console.log(response)
+                     if (response.error) {
+                        this.error_message = response.error;
+                        this.success_message = '';
+                        document.body.scrollTop = document.documentElement.scrollTop = 0;
+                    } else {
+                        this.error_message = '';
+                        console.log(response.location)
+                        window.location = response.location
+                    }
                 })
             }
         }

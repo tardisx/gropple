@@ -22,6 +22,11 @@ type successResponse struct {
 	Message string `json:"message"`
 }
 
+type queuedResponse struct {
+	Success  bool   `json:"success"`
+	Location string `json:"location"`
+}
+
 type errorResponse struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error"`
@@ -314,8 +319,11 @@ func fetchInfoRESTHandler(dm *download.Manager) func(w http.ResponseWriter, r *h
 	}
 }
 
+// fetchHandler shows the popup, either the initial form (for create) or the form when in
+// progress (to be updated by REST) - this is determined by GET vs POST
 func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Manager) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("fetchHandler ")
 
 		method := r.Method
 
@@ -328,7 +336,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 
 		if method == "GET" && idOK == nil && idInt > 0 {
 			// existing, load it up
-
+			log.Printf("loading popup for id %d", idInt)
 			dl, err := dm.GetDlById(int(idInt))
 			if err != nil {
 				log.Printf("not found")
@@ -350,40 +358,75 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			return
 		} else if method == "POST" {
 			// creating a new one
-			panic("should not get here")
+			type reqType struct {
+				URL               string `json:"url"`
+				ProfileChosen     string `json:"profile"`
+				DestinationChosen string `json:"destination"`
+			}
 
-			query := r.URL.Query()
-			url, present := query["url"]
+			req := reqType{}
+			json.NewDecoder(r.Body).Decode(&req)
 
-			if !present {
+			log.Printf("popup POST request: %#v", req)
+
+			if req.URL == "" {
 				w.WriteHeader(400)
-				fmt.Fprint(w, "No url supplied")
+				json.NewEncoder(w).Encode(errorResponse{
+					Success: false,
+					Error:   "No URL supplied",
+				})
 				return
 			} else {
-				log.Printf("popup for %s (POST)", url)
+
+				if req.ProfileChosen == "" {
+
+					w.WriteHeader(400)
+					json.NewEncoder(w).Encode(errorResponse{
+						Success: false,
+						Error:   "you must choose a profile",
+					})
+					return
+				}
+
+				profile := cs.Config.ProfileCalled(req.ProfileChosen)
+				if profile == nil {
+					w.WriteHeader(400)
+					json.NewEncoder(w).Encode(errorResponse{
+						Success: false,
+						Error:   fmt.Sprintf("no such profile: '%s'", req.ProfileChosen),
+					})
+					return
+				}
+
+				destination := cs.Config.DestinationCalled(req.DestinationChosen)
+				if req.DestinationChosen != "" && destination == nil {
+					w.WriteHeader(400)
+					json.NewEncoder(w).Encode(errorResponse{
+						Success: false,
+						Error:   fmt.Sprintf("no such destination: '%s'", req.DestinationChosen),
+					})
+					return
+				}
 
 				// create the new download
-				newDL := download.NewDownload(url[0], cs.Config)
+				newDL := download.NewDownload(req.URL, cs.Config)
+				id := newDL.Id
+				newDL.Destination = destination
+				newDL.DownloadProfile = *profile
 				dm.AddDownload(newDL)
+				dm.Queue(newDL)
 
-				t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
-				if err != nil {
-					panic(err)
-				}
+				w.WriteHeader(200)
+				json.NewEncoder(w).Encode(queuedResponse{
+					Success:  true,
+					Location: fmt.Sprintf("/fetch/%d", id),
+				})
 
-				newDL.Lock.Lock()
-				defer newDL.Lock.Unlock()
-
-				templateData := map[string]interface{}{"Version": vm.GetInfo(), "dl": newDL, "config": cs.Config, "canStop": download.CanStopDownload}
-
-				err = t.ExecuteTemplate(w, "layout", templateData)
-				if err != nil {
-					panic(err)
-				}
 			}
 		} else {
 			// a GET, show the popup so they can start the download (or just close
 			// the popup if they didn't mean it)
+			log.Print("loading popup for a new download")
 			query := r.URL.Query()
 			url, present := query["url"]
 
