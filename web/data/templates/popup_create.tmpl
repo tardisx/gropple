@@ -1,0 +1,60 @@
+{{ define "content" }}
+    <div id="layout" class="pure-g pure-u-1" x-data="popup_create()" x-init="">
+        <h2>Download create</h2>
+        <p>URL: <tt>{{ .url }}</tt></p>
+        <table class="pure-table" >
+            <tr>
+                <th>profile</th>
+                <td>
+                    <select x-bind:disabled="profile_chosen" x-on:change="update_profile()" class="pure-input-1-2" x-model="profile_chosen">
+                        <option value="">choose a profile</option>
+                    {{ range $i := .config.DownloadProfiles }}
+                        <option>{{ $i.Name }}</option>
+                    {{ end }}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>destination</th>
+                <td>
+                    <select  x-on:change="update_destination()" class="pure-input-1-2" x-model="destination_chosen">
+                        <option value="-">leave in {{ .config.Server.DownloadPath }}</option>
+                    {{ range $i := .config.Destinations }}
+                        <option>{{ $i.Name }}</option>
+                    {{ end }}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>&nbsp;</th>
+                <td>
+                    <button class="pure-button" @click="start()">start download</button>
+                </td>
+            </tr>
+
+        </table>
+    </div>
+{{ end }}
+{{ define "js" }}
+<script>
+    function popup_create() {
+        return {
+            profile_chosen: null,
+            destination_chosen: null,
+            start() {
+                let op = {
+                   method: 'POST',
+                   body: JSON.stringify({action: 'start'}),
+                   headers: { 'Content-Type': 'application/json' }
+                };
+                fetch('/rest/fetch', op)
+                .then(response => response.json())
+                .then(info => {
+                    console.log(info)
+                })
+            }
+        }
+    }
+</script>
+{{ end }}
+

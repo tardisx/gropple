@@ -317,15 +317,17 @@ func fetchInfoRESTHandler(dm *download.Manager) func(w http.ResponseWriter, r *h
 func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Manager) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		method := r.Method
+
 		// if they refreshed the popup, just load the existing object, don't
 		// create a new one
 		vars := mux.Vars(r)
 		idString := vars["id"]
 
-		idInt, err := strconv.ParseInt(idString, 10, 32)
+		idInt, idOK := strconv.ParseInt(idString, 10, 32)
 
-		// existing, load it up
-		if err == nil && idInt > 0 {
+		if method == "GET" && idOK == nil && idInt > 0 {
+			// existing, load it up
 
 			dl, err := dm.GetDlById(int(idInt))
 			if err != nil {
@@ -346,43 +348,63 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 				panic(err)
 			}
 			return
-		}
+		} else if method == "POST" {
+			// creating a new one
+			panic("should not get here")
 
-		query := r.URL.Query()
-		url, present := query["url"]
+			query := r.URL.Query()
+			url, present := query["url"]
 
-		if !present {
-			w.WriteHeader(400)
-			fmt.Fprint(w, "No url supplied")
-			return
-		} else {
-
-			log.Printf("popup for %s", url)
-			// check the URL for a sudden but inevitable betrayal
-			if strings.Contains(url[0], cs.Config.Server.Address) {
+			if !present {
 				w.WriteHeader(400)
-				fmt.Fprint(w, "you mustn't gropple your gropple :-)")
+				fmt.Fprint(w, "No url supplied")
+				return
+			} else {
+				log.Printf("popup for %s (POST)", url)
+
+				// create the new download
+				newDL := download.NewDownload(url[0], cs.Config)
+				dm.AddDownload(newDL)
+
+				t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
+				if err != nil {
+					panic(err)
+				}
+
+				newDL.Lock.Lock()
+				defer newDL.Lock.Unlock()
+
+				templateData := map[string]interface{}{"Version": vm.GetInfo(), "dl": newDL, "config": cs.Config, "canStop": download.CanStopDownload}
+
+				err = t.ExecuteTemplate(w, "layout", templateData)
+				if err != nil {
+					panic(err)
+				}
+			}
+		} else {
+			// a GET, show the popup so they can start the download (or just close
+			// the popup if they didn't mean it)
+			query := r.URL.Query()
+			url, present := query["url"]
+
+			if !present {
+				w.WriteHeader(400)
+				fmt.Fprint(w, "No url supplied")
 				return
 			}
 
-			// create the new download
-			newDL := download.NewDownload(url[0], cs.Config)
-			dm.AddDownload(newDL)
-
-			t, err := template.ParseFS(webFS, "web/layout.tmpl", "web/popup.html")
+			t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/popup_create.tmpl")
 			if err != nil {
 				panic(err)
 			}
-
-			newDL.Lock.Lock()
-			defer newDL.Lock.Unlock()
-
-			templateData := map[string]interface{}{"Version": vm.GetInfo(), "dl": newDL, "config": cs.Config, "canStop": download.CanStopDownload}
+			templateData := map[string]interface{}{"config": cs.Config, "url": url[0]}
 
 			err = t.ExecuteTemplate(w, "layout", templateData)
 			if err != nil {
 				panic(err)
 			}
+
 		}
+
 	}
 }
