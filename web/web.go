@@ -211,9 +211,7 @@ func fetchInfoOneRESTHandler(cs *config.ConfigService, dm *download.Manager) fun
 			if r.Method == "POST" {
 
 				type updateRequest struct {
-					Action      string `json:"action"`
-					Profile     string `json:"profile"`
-					Destination string `json:"destination"`
+					Action string `json:"action"`
 				}
 
 				thisReq := updateRequest{}
@@ -229,46 +227,6 @@ func fetchInfoOneRESTHandler(cs *config.ConfigService, dm *download.Manager) fun
 					errorResB, _ := json.Marshal(errorRes)
 					w.WriteHeader(400)
 					_, err = w.Write(errorResB)
-					if err != nil {
-						log.Printf("could not write to client: %s", err)
-					}
-					return
-				}
-
-				if thisReq.Action == "start" {
-					// find the profile they asked for
-					profile := cs.Config.ProfileCalled(thisReq.Profile)
-					if profile == nil {
-						panic("bad profile name?")
-					}
-					// set the profile
-					thisDownload.Lock.Lock()
-					thisDownload.DownloadProfile = *profile
-					thisDownload.Lock.Unlock()
-
-					dm.Queue(thisDownload)
-
-					succRes := successResponse{Success: true, Message: "download started"}
-					succResB, _ := json.Marshal(succRes)
-					_, err = w.Write(succResB)
-					if err != nil {
-						log.Printf("could not write to client: %s", err)
-					}
-					return
-				}
-
-				if thisReq.Action == "change_destination" {
-
-					// nil means (probably) that they chose "don't move" - which is fine,
-					// and maps to nil on the Download (the default state).
-					destination := cs.Config.DestinationCalled(thisReq.Destination)
-					dm.ChangeDestination(thisDownload, destination)
-
-					//				log.Printf("%#v", thisDownload)
-
-					succRes := successResponse{Success: true, Message: "destination changed"}
-					succResB, _ := json.Marshal(succRes)
-					_, err = w.Write(succResB)
 					if err != nil {
 						log.Printf("could not write to client: %s", err)
 					}
@@ -421,7 +379,6 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 					Success:  true,
 					Location: fmt.Sprintf("/fetch/%d", id),
 				})
-
 			}
 		} else {
 			// a GET, show the popup so they can start the download (or just close
