@@ -32,18 +32,29 @@ var webFS embed.FS
 
 func CreateRoutes(cs *config.ConfigService, dm *download.Manager, vm *version.Manager) *mux.Router {
 	r := mux.NewRouter()
+
+	// main index page
 	r.HandleFunc("/", homeHandler(cs, vm, dm))
+	// update info on the status page
+	r.HandleFunc("/rest/fetch", fetchInfoRESTHandler(dm))
+
+	// return static files
 	r.HandleFunc("/static/{filename}", staticHandler())
-	r.HandleFunc("/config", configHandler)
+
+	// return the config page
+	r.HandleFunc("/config", configHandler())
+	// handle config fetches/updates
+	r.HandleFunc("/rest/config", configRESTHandler(cs))
+
+	// create or present a download in the popup
 	r.HandleFunc("/fetch", fetchHandler(cs, vm, dm))
 	r.HandleFunc("/fetch/{id}", fetchHandler(cs, vm, dm))
 
-	// info for the list
-	r.HandleFunc("/rest/fetch", fetchInfoRESTHandler(dm))
-	// info for one, including update
+	// get/update info on a download
 	r.HandleFunc("/rest/fetch/{id}", fetchInfoOneRESTHandler(cs, dm))
+
+	// version information
 	r.HandleFunc("/rest/version", versionRESTHandler(vm))
-	r.HandleFunc("/rest/config", configRESTHandler(cs))
 
 	http.Handle("/", r)
 	return r
@@ -124,17 +135,19 @@ func staticHandler() func(w http.ResponseWriter, r *http.Request) {
 }
 
 // configHandler returns the configuration page
-func configHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func configHandler() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 
-	t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/config.tmpl")
-	if err != nil {
-		panic(err)
-	}
+		t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/config.tmpl")
+		if err != nil {
+			panic(err)
+		}
 
-	err = t.ExecuteTemplate(w, "layout", nil)
-	if err != nil {
-		panic(err)
+		err = t.ExecuteTemplate(w, "layout", nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
