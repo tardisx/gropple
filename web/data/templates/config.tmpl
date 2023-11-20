@@ -11,14 +11,14 @@
 
     <div class="pure-g">
         <div class="pure-u-1">
-            <button class="pure-button pure-button-primary" @click="save_config();" href="#">Save Config</button>
+            <button class="button-small pure-button button-small pure-button-primary" @click="save_config();" href="#">Save Config</button>
         </div>
     </div>
 
     <div class="pure-g">
 
         <div class="pure-u-lg-1-3 pure-u-1 l-box">
-   
+
             <form class="pure-form pure-form-stacked gropple-config">
                 <fieldset>
 
@@ -65,8 +65,8 @@
 
                     <legend>Download Profiles</legend>
 
-                    <p>Gropple supports multiple download profiles. Each profile specifies a different youtube-dl 
-                        compatible command, and arguments. When starting a download, you may choose which profile 
+                    <p>Gropple supports multiple download profiles. Each profile specifies a different youtube-dl
+                        compatible command, and arguments. When starting a download, you may choose which profile
                         to use. The URL will be appended to the argument list at the end.
                     </p>
 
@@ -75,10 +75,10 @@
                     <template x-for="(profile, i) in config.profiles">
                         <div>
                             <label x-bind:for="'config-profiles-'+i+'-name'">Name of profile <span x-text="i+1"></span>
-                            </label>                                
-                            
+                            </label>
+
                             <input type="text" x-bind:id="'config-profiles-'+i+'-name'" class="input-long" placeholder="name" x-model="profile.name" />
-                            <button class="pure-button button-del" href="#" @click.prevent="config.profiles.splice(i, 1);;">delete profile</button>
+                            <button class="button-small pure-button button-del" href="#" @click.prevent="config.profiles.splice(i, 1);;">delete profile</button>
 
                             <span class="pure-form-message">The name of this profile. For your information only.</span>
 
@@ -92,11 +92,11 @@
                             <template x-for="(arg, j) in profile.args">
                                 <div>
                                     <input type="text" x-bind:id="'config-profiles-'+i+'-arg-'+j" placeholder="arg" x-model="profile.args[j]" />
-                                    <button class="pure-button button-del" href="#" @click.prevent="profile.args.splice(j, 1);;">delete arg</button>
+                                    <button class="button-small pure-button button-del" href="#" @click.prevent="profile.args.splice(j, 1);;">delete arg</button>
                                 </div>
                             </template>
 
-                            <button class="pure-button button-add" href="#" @click.prevent="profile.args.push('');">add arg</button>
+                            <button class="button-small pure-button button-add" href="#" @click.prevent="profile.args.push('');">add arg</button>
                             <span class="pure-form-message">Arguments for the command. Note that the shell is not used, so there is no need to quote or escape arguments, including those with spaces.</span>
 
                             <hr>
@@ -104,7 +104,7 @@
                         </div>
                     </template>
 
-                    <button class="pure-button button-add" href="#" @click.prevent="config.profiles.push({name: 'new profile', command: 'youtube-dl', args: []});">add profile</button>
+                    <button class="button-small pure-button button-add" href="#" @click.prevent="config.profiles.push({name: 'new profile', command: 'youtube-dl', args: []});">add profile</button>
 
                 </fieldset>
             </form>
@@ -113,39 +113,44 @@
         <div class="pure-u-lg-1-3 pure-u-1 l-box">
             <form class="pure-form gropple-config">
                 <fieldset>
-                    <legend>Destinations</legend>
-                    <p>You can specify custom destinations (directories) here. Downloads can be
-                        moved to one of these directories after completion from the index page, 
-                        if you do not want them to be left in the download path above.</p>
+                    <legend>Download Options</legend>
+                    <p>You can specify custom download options here. These are (optionally) selectable in addition
+                    to the profile when starting a download. They append extra arguments to the downloader command.
+                    The most common use is to specify a particular <tt>-o</tt> argument to <tt>yt-dlp</tt> to allow files to be downloaded
+                    to a custom path.</p>
                     </p>
-                    <template x-for="(dest, i) in config.destinations">
+                    <template x-for="(download_option, i) in config.download_options">
                     <div>
-                        <label x-bind:for="'config-destinations-'+i+'-name'">Name of destination <span x-text="i+1"></span>
-                        </label>                                
-                        
-                        <input type="text" x-bind:id="'config-destinations-'+i+'-name'" class="input-long" placeholder="name" x-model="dest.name" />
+                        <label x-bind:for="'config-download-option-'+i+'-name'">Name of option <span x-text="i+1"></span>
+                        </label>
 
-                        <span class="pure-form-message">The name of this destination. For your information only.</span>
+                        <input type="text" x-bind:id="'config-download-option-'+i+'-name'" class="input-long" placeholder="name" x-model="download_option.name" />
 
-                        <label x-bind:for="'config-destinations-'+i+'-command'">Path</label>
-                        <input type="text" x-bind:id="'config-destinations-'+i+'-command'" class="input-long" placeholder="name" x-model="dest.path" />
-                        <span class="pure-form-message">Path to move completed downloads to.</span>
+                        <span class="pure-form-message">The name of this option. For your information only.</span>
 
-                        <button class="pure-button button-del" href="#" @click.prevent="config.destinations.splice(i, 1);">delete destination</button>
+                            <label>Arguments</label>
+
+                            <template x-for="(arg, j) in download_option.args">
+                                <div>
+                                    <input type="text" x-bind:id="'config-download-option-'+i+'-arg-'+j" placeholder="arg" x-model="download_option.args[j]" />
+                                    <button class="button-small pure-button button-del" href="#" @click.prevent="download_option.args.splice(j, 1);;">delete arg</button>
+                                </div>
+                            </template>
+                        <button class="button-small pure-button button-del" href="#" @click.prevent="config.download_options.splice(i, 1);">delete option</button>
 
                         <hr>
 
                     </div>
                 </template>
 
-                <button class="pure-button button-add" href="#" @click.prevent="config.destinations.push({name: 'new destination', path: '/tmp'});">add destination</button>
+                <button class="button-small pure-button button-add" href="#" @click.prevent="config.download_options.push({name: 'new option', args: ['-o', 'someting']});">add option</button>
 
             </fieldset>
         </form>
     </div>
     <div class="pure-g">
         <div class="pure-u-1">
-            <button class="pure-button pure-button-primary" @click="save_config();" href="#">Save Config</button>
+            <button class="button-small pure-button button-small pure-button-primary" @click="save_config();" href="#">Save Config</button>
         </div>
     </div>
 
@@ -157,8 +162,8 @@
 {{ define "js" }}
 <script>
     function config() {
-        return { 
-            config: { server : {}, ui : {}, profiles: [], destinations: []}, 
+        return {
+            config: { server : {}, ui : {}, profiles: [], download_options: []},
             error_message: '',
             success_message: '',
 

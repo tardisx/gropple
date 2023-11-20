@@ -317,9 +317,9 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 		} else if method == "POST" {
 			// creating a new one
 			type reqType struct {
-				URL               string `json:"url"`
-				ProfileChosen     string `json:"profile"`
-				DestinationChosen string `json:"destination"`
+				URL                  string `json:"url"`
+				ProfileChosen        string `json:"profile"`
+				DownloadOptionChosen string `json:"download_option"`
 			}
 
 			req := reqType{}
@@ -356,20 +356,12 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 					return
 				}
 
-				destination := cs.Config.DestinationCalled(req.DestinationChosen)
-				if req.DestinationChosen != "" && destination == nil {
-					w.WriteHeader(400)
-					json.NewEncoder(w).Encode(errorResponse{
-						Success: false,
-						Error:   fmt.Sprintf("no such destination: '%s'", req.DestinationChosen),
-					})
-					return
-				}
+				option := cs.Config.DownloadOptionCalled(req.DownloadOptionChosen)
 
 				// create the new download
 				newDL := download.NewDownload(req.URL, cs.Config)
 				id := newDL.Id
-				newDL.Destination = destination
+				newDL.DownloadOption = option
 				newDL.DownloadProfile = *profile
 				dm.AddDownload(newDL)
 				dm.Queue(newDL)

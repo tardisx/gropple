@@ -24,13 +24,23 @@
     <table class="pure-table">
         <thead>
             <tr>
-		    <th>id</th><th>filename</th><th>url</th><th>show</th><th>state</th><th>percent</th><th>eta</th><th>finished</th>
+                <th>id</th>
+                <th>filename</th>
+                <th>url</th>
+                <th>state</th>
+                <th>percent</th>
+                <th>eta</th>
+                <th>finished</th>
             </tr>
         </thead>
         <tbody>
             <template x-for="item in items">
                 <tr>
-                    <td x-text="item.id"></td>
+                    <td>
+                        <a class="int-link" @click="show_popup(item)" href="#">
+                          <span x-text="item.id">
+                        </a>
+                    </td>
                     <td>
                         <span x-show="item.files && item.files.length > 0">
                             <ul>
@@ -43,18 +53,17 @@
                               x-text="item.url">
                         </span>
                     </td>
-                    <td><a class="int-link" x-bind:href="item.url">&#x2197;</a></td>
-                    <td><a class="int-link" @click="show_popup(item)" href="#">&#x1F4C4;</a></td>
+                    <td><a class="int-link" x-bind:href="item.url">&#x1F517;</a></td>
                     <td :class="'state-'+item.state" x-text="item.state"></td>
                     <td x-text="item.percent"></td>
                     <td x-text="item.eta"></td>
                     <td x-text="item.finished ? '&#x2714;' : '-'"></td>
                 </tr>
-    
-            </template>
-              
 
-        </tbody>  
+            </template>
+
+
+        </tbody>
     </table>
 </div>
 {{ end }}
@@ -62,7 +71,7 @@
 {{ define "js" }}
 <script>
     function index() {
-        return { 
+        return {
             items: [], version: {}, popups: {},
             fetch_version() {
                 fetch('/rest/version')

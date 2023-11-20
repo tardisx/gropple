@@ -237,15 +237,15 @@ func TestUpdateMetadataPlaylist(t *testing.T) {
 
 	output := `
 start of log...
-[download] Downloading playlist: niceuser
-[RedGifsUser] niceuser: Downloading JSON metadata page 1
-[RedGifsUser] niceuser: Downloading JSON metadata page 2
-[RedGifsUser] niceuser: Downloading JSON metadata page 3
-[RedGifsUser] niceuser: Downloading JSON metadata page 4
-[RedGifsUser] niceuser: Downloading JSON metadata page 5
-[RedGifsUser] niceuser: Downloading JSON metadata page 6
-[info] Writing playlist metadata as JSON to: niceuser [niceuser].info.json
-[RedGifsUser] playlist niceuser: Downloading 3 videos
+[download] Downloading playlist: nice_user
+[RedGifsUser] nice_user: Downloading JSON metadata page 1
+[RedGifsUser] nice_user: Downloading JSON metadata page 2
+[RedGifsUser] nice_user: Downloading JSON metadata page 3
+[RedGifsUser] nice_user: Downloading JSON metadata page 4
+[RedGifsUser] nice_user: Downloading JSON metadata page 5
+[RedGifsUser] nice_user: Downloading JSON metadata page 6
+[info] Writing playlist metadata as JSON to: nice_user [nice_user].info.json
+[RedGifsUser] playlist nice_user: Downloading 3 videos
 [download] Downloading video 1 of 3
 [info] wrongpreciouschrysomelid: Downloading 1 format(s): hd
 [info] Writing video metadata as JSON to: Splendid Wonderful Speaker Power Chocolate Drop [wrongpreciouschrysomelid].info.json
@@ -279,8 +279,8 @@ start of log...
 [download]  69.1% of 2.89MiB at 11.63MiB/s ETA 00:00
 [download] 100% of 2.89MiB at 14.25MiB/s ETA 00:00
 [download] 100% of 2.89MiB in 00:00
-[info] Writing updated playlist metadata as JSON to: niceuser [niceuser].info.json
-[download] Finished downloading playlist: niceuser
+[info] Writing updated playlist metadata as JSON to: nice_user [nice_user].info.json
+[download] Finished downloading playlist: nice_user
 `
 	newD := Download{}
 

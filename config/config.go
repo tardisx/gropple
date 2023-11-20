@@ -27,6 +27,12 @@ type DownloadProfile struct {
 	Args    []string `yaml:"args" json:"args"`
 }
 
+// DownloadOption contains configuration for extra arguments to pass to the download command
+type DownloadOption struct {
+	Name string   `yaml:"name" json:"name"`
+	Args []string `yaml:"args" json:"args"`
+}
+
 // UI holds the configuration for the user interface
 type UI struct {
 	PopupWidth  int `yaml:"popup_width" json:"popup_width"`
@@ -44,8 +50,9 @@ type Config struct {
 	ConfigVersion    int               `yaml:"config_version" json:"config_version"`
 	Server           Server            `yaml:"server" json:"server"`
 	UI               UI                `yaml:"ui" json:"ui"`
-	Destinations     []Destination     `yaml:"destinations" json:"destinations"`
+	Destinations     []Destination     `yaml:"destinations" json:"destinations"` // no longer in use, see DownloadOptions
 	DownloadProfiles []DownloadProfile `yaml:"profiles" json:"profiles"`
+	DownloadOptions  []DownloadOption  `yaml:"download_options" json:"download_options"`
 }
 
 // ConfigService is a struct to handle configuration requests, allowing for the
@@ -88,7 +95,8 @@ func (cs *ConfigService) LoadDefaultConfig() {
 
 	defaultConfig.Server.MaximumActiveDownloads = 2
 
-	defaultConfig.Destinations = make([]Destination, 0)
+	defaultConfig.Destinations = nil
+	defaultConfig.DownloadOptions = make([]DownloadOption, 0)
 
 	defaultConfig.ConfigVersion = 3
 
@@ -96,7 +104,7 @@ func (cs *ConfigService) LoadDefaultConfig() {
 
 }
 
-// ProfileCalled returns the corresponding profile, or nil if it does not exist
+// ProfileCalled returns the corresponding DownloadProfile, or nil if it does not exist
 func (c *Config) ProfileCalled(name string) *DownloadProfile {
 	for _, p := range c.DownloadProfiles {
 		if p.Name == name {
@@ -106,11 +114,11 @@ func (c *Config) ProfileCalled(name string) *DownloadProfile {
 	return nil
 }
 
-// DestinationCalled returns the corresponding destination, or nil if it does not exist
-func (c *Config) DestinationCalled(name string) *Destination {
-	for _, p := range c.Destinations {
-		if p.Name == name {
-			return &p
+// DownloadOptionCalled returns the corresponding DownloadOption, or nil if it does not exist
+func (c *Config) DownloadOptionCalled(name string) *DownloadOption {
+	for _, o := range c.DownloadOptions {
+		if o.Name == name {
+			return &o
 		}
 	}
 	return nil
@@ -184,17 +192,6 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 		_, err := exec.LookPath(newConfig.DownloadProfiles[i].Command)
 		if err != nil {
 			return fmt.Errorf("Could not find %s on the path", newConfig.DownloadProfiles[i].Command)
-		}
-	}
-
-	// check destinations
-	for _, dest := range newConfig.Destinations {
-		s, err := os.Stat(dest.Path)
-		if err != nil {
-			return fmt.Errorf("destination '%s' (%s) is bad: %s", dest.Name, dest.Path, err)
-		}
-		if !s.IsDir() {
-			return fmt.Errorf("destination '%s' (%s) is not a directory", dest.Name, dest.Path)
 		}
 	}
 
@@ -293,6 +290,20 @@ func (cs *ConfigService) LoadConfig() error {
 		c.ConfigVersion = 3
 		configMigrated = true
 		log.Print("migrated config from version 2 => 3")
+	}
+
+	if c.ConfigVersion == 3 {
+		c.ConfigVersion = 4
+		for i := range c.Destinations {
+			newDownloadOption := DownloadOption{
+				Name: c.Destinations[i].Name,
+				Args: []string{"-o", fmt.Sprintf("%s/%%(title)s [%%(id)s].%%(ext)s", c.Destinations[i].Path)},
+			}
+			c.DownloadOptions = append(c.DownloadOptions, newDownloadOption)
+			c.Destinations = nil
+		}
+		configMigrated = true
+		log.Print("migrated config from version 3 => 4")
 	}
 
 	if configMigrated {

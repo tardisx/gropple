@@ -19,11 +19,11 @@
                 </td>
             </tr>
             <tr>
-                <th>destination</th>
+                <th>download option</th>
                 <td>
-                    <select  class="pure-input-1-2" x-model="destination_chosen">
-                        <option value="">leave in {{ .config.Server.DownloadPath }}</option>
-                    {{ range $i := .config.Destinations }}
+                    <select  class="pure-input-1-2" x-model="download_option_chosen">
+                        <option value="">no option</option>
+                    {{ range $i := .config.DownloadOptions }}
                         <option>{{ $i.Name }}</option>
                     {{ end }}
                     </select>
@@ -32,7 +32,7 @@
             <tr>
                 <th>&nbsp;</th>
                 <td>
-                    <button class="pure-button" @click="start()">start download</button>
+                    <button class="button-small pure-button" @click="start()">start download</button>
                 </td>
             </tr>
 
@@ -44,12 +44,12 @@
     function popup_create() {
         return {
             profile_chosen: "",
-            destination_chosen: "",
+            download_option_chosen: "",
             error_message: "",
             start() {
                 let op = {
                    method: 'POST',
-                   body: JSON.stringify({action: 'start', url: '{{ .url }}', profile: this.profile_chosen, destination: this.destination_chosen}),
+                   body: JSON.stringify({action: 'start', url: '{{ .url }}', profile: this.profile_chosen, download_option: this.download_option_chosen}),
                    headers: { 'Content-Type': 'application/json' }
                 };
                 fetch('/fetch', op)

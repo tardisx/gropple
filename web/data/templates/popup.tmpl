@@ -2,6 +2,7 @@
     <div id="layout" class="pure-g pure-u-1" x-data="popup()" x-init="fetch_data()">
         <h2>Download started</h2>
         <p>Fetching <tt>{{ .dl.Url }}</tt></p>
+        <form class="pure-form">
         <table class="pure-table" >
             <tr>
                 <th>profile</th>
@@ -9,9 +10,9 @@
             </tr>
             <tr><th>current filename</th><td x-text="filename"></td></tr>
             <tr>
-                <th>destination</th>
+                <th>option</th>
                 <td>
-                  {{ if .dl.Destination }} {{ .dl.Destination.Name }} {{ else }} leave in {{ .config.Server.DownloadPath }} {{ end }}
+                  {{ if .dl.DownloadOption }} {{ .dl.DownloadOption.Name }} {{ else }} n/a {{ end }}
                 </td>
             </tr>
             <tr><th>state</th><td x-text="state"></td></tr>
@@ -22,8 +23,9 @@
         </table>
         <p>You can close this window and your download will continue. Check the <a href="/" target="_gropple_status">Status page</a> to see all downloads in progress.</p>
         {{ if .canStop }}
-        <button x-show="state=='Downloading'" class="pure-button" @click="stop()">stop</button>
+        <button x-show="state=='Downloading'" class="button-small pure-button" @click="stop()">stop</button>
         {{ end }}
+        </form>
         <div>
             <h4>Logs</h4>
             <pre x-text="log" style="height: auto;">

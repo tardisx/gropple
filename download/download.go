@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,7 +26,7 @@ type Download struct {
 	ExitCode        int                    `json:"exit_code"`
 	State           State                  `json:"state"`
 	DownloadProfile config.DownloadProfile `json:"download_profile"`
-	Destination     *config.Destination    `json:"destination"`
+	DownloadOption  *config.DownloadOption `json:"download_option"`
 	Finished        bool                   `json:"finished"`
 	FinishedTS      time.Time              `json:"finished_ts"`
 	Files           []string               `json:"files"`
@@ -82,7 +81,6 @@ func (m *Manager) ManageQueue() {
 		m.Lock.Lock()
 
 		m.startQueued(m.MaxPerDomain)
-		m.moveToDest()
 		m.cleanup()
 		m.Lock.Unlock()
 
@@ -100,32 +98,6 @@ func (m *Manager) DownloadsAsJSON() ([]byte, error) {
 	}
 	b, err := json.Marshal(m.Downloads)
 	return b, err
-}
-
-func (m *Manager) moveToDest() {
-
-	// move any downloads that are complete and have a dest
-	for _, dl := range m.Downloads {
-
-		dl.Lock.Lock()
-		if dl.Destination != nil && dl.State == STATE_COMPLETE {
-			dl.State = STATE_MOVED
-			for _, fn := range dl.Files {
-				src := filepath.Join(dl.Config.Server.DownloadPath, fn)
-				dst := filepath.Join(dl.Destination.Path, fn)
-				err := os.Rename(src, dst)
-				if err != nil {
-					log.Printf("%s", err)
-					dl.Log = append(dl.Log, fmt.Sprintf("Could not move %s to %s - %s", fn, dl.Destination.Path, err))
-					break
-				} else {
-					dl.Log = append(dl.Log, fmt.Sprintf("Moved %s to %s", fn, dl.Destination.Path))
-
-				}
-			}
-		}
-		dl.Lock.Unlock()
-	}
 }
 
 // startQueued starts any downloads that have been queued, we would not exceed
@@ -200,17 +172,6 @@ func (m *Manager) Queue(dl *Download) {
 	dl.Lock.Lock()
 	defer dl.Lock.Unlock()
 	dl.State = STATE_QUEUED
-}
-
-func (m *Manager) ChangeDestination(dl *Download, dest *config.Destination) {
-	dl.Lock.Lock()
-	// we can only change destination is certain cases...
-	if dl.State != STATE_FAILED && dl.State != STATE_MOVED {
-		dl.Destination = dest
-	}
-
-	dl.Lock.Unlock()
-
 }
 
 func NewDownload(url string, conf *config.Config) *Download {
