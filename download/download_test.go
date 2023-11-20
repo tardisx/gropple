@@ -21,11 +21,11 @@ func TestUpdateMetadata(t *testing.T) {
 	// eta's might be xx:xx:xx or xx:xx
 	newD.updateMetadata("[download]   0.0% of 504.09MiB at 135.71KiB/s ETA 01:03:36")
 	if newD.Eta != "01:03:36" {
-		t.Fatalf("bad long eta in dl\n%v", newD)
+		t.Fatalf("bad long eta in dl\n%#v", newD)
 	}
 	newD.updateMetadata("[download]   0.0% of 504.09MiB at 397.98KiB/s ETA 21:38")
 	if newD.Eta != "21:38" {
-		t.Fatalf("bad short eta in dl\n%v", newD)
+		t.Fatalf("bad short eta in dl\n%#v", newD)
 	}
 
 	// added a new file, now we are tracking two
