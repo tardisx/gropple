@@ -5,9 +5,9 @@
 <div x-data="index()" x-init="fetch_data(); fetch_version()">
 
     <p x-cloak x-show="version && version.upgrade_available">
-        <a href="https://github.com/tardisx/gropple/releases">Upgrade is available</a> - 
-        you have 
-        <span x-text="version.current_version"></span> and 
+        <a href="https://github.com/tardisx/gropple/releases">Upgrade is available</a> -
+        you have
+        <span x-text="version.current_version"></span> and
         <span x-text="version.github_version"></span>
     is available.</p>
 

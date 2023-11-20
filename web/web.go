@@ -278,10 +278,10 @@ func fetchInfoRESTHandler(dm *download.Manager) func(w http.ResponseWriter, r *h
 }
 
 // fetchHandler shows the popup, either the initial form (for create) or the form when in
-// progress (to be updated by REST) - this is determined by GET vs POST
+// progress (to be updated by REST). It also handles the form POST for creating a new download.
 func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Manager) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("fetchHandler ")
+		log.Printf("fetchHandler")
 
 		method := r.Method
 
@@ -307,7 +307,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 				panic(err)
 			}
 
-			templateData := map[string]interface{}{"dl": dl, "config": cs.Config, "canStop": download.CanStopDownload}
+			templateData := map[string]interface{}{"dl": dl, "config": cs.Config, "canStop": download.CanStopDownload, "Version": vm.GetInfo()}
 
 			err = t.ExecuteTemplate(w, "layout", templateData)
 			if err != nil {
@@ -373,8 +373,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 				})
 			}
 		} else {
-			// a GET, show the popup so they can start the download (or just close
-			// the popup if they didn't mean it)
+			// a GET, show the popup so they can start the download
 			log.Print("loading popup for a new download")
 			query := r.URL.Query()
 			url, present := query["url"]
@@ -389,7 +388,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			if err != nil {
 				panic(err)
 			}
-			templateData := map[string]interface{}{"config": cs.Config, "url": url[0]}
+			templateData := map[string]interface{}{"config": cs.Config, "url": url[0], "Version": vm.GetInfo()}
 
 			err = t.ExecuteTemplate(w, "layout", templateData)
 			if err != nil {
