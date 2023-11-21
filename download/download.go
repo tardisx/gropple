@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -235,16 +236,52 @@ func (dl *Download) domain() string {
 // It blocks until the download is complete.
 func (dl *Download) Begin() {
 	dl.Lock.Lock()
+	u, err := url.Parse(dl.Url)
+	if err != nil {
+		log.Printf("Bad url '%s': %s", dl.Url, err.Error())
+	}
+
+	// grab the host and path for substitutions
+	host := u.Host
+	path := u.Path
+
+	// strip the leading /
+	if strings.Index(path, "/") == 0 {
+		path = path[1:]
+	}
+
+	// escape them in a way that should mean we can use them as a filepath
+	host = strings.ReplaceAll(host, string(filepath.Separator), "_")
+	host = strings.ReplaceAll(host, string(filepath.ListSeparator), "_")
+	path = strings.ReplaceAll(path, string(filepath.Separator), "_")
+	path = strings.ReplaceAll(path, string(filepath.ListSeparator), "_")
 
 	dl.State = STATE_DOWNLOADING
 	cmdSlice := []string{}
-	cmdSlice = append(cmdSlice, dl.DownloadProfile.Args...)
+
+	for i := range dl.DownloadProfile.Args {
+		arg := dl.DownloadProfile.Args[i]
+		arg = strings.ReplaceAll(arg, "%GROPPLE_HOST%", host)
+		arg = strings.ReplaceAll(arg, "%GROPPLE_PATH%", path)
+		cmdSlice = append(cmdSlice, arg)
+	}
+
+	// add the option, if any
+	if dl.DownloadOption != nil {
+		for i := range dl.DownloadOption.Args {
+			arg := dl.DownloadOption.Args[i]
+			arg = strings.ReplaceAll(arg, "%GROPPLE_HOST%", host)
+			arg = strings.ReplaceAll(arg, "%GROPPLE_PATH%", path)
+			cmdSlice = append(cmdSlice, arg)
+		}
+	}
 
 	// only add the url if it's not empty or an example URL. This helps us with testing
 	if !(dl.Url == "" || strings.Contains(dl.domain(), "example.org")) {
 		cmdSlice = append(cmdSlice, dl.Url)
 	}
 
+	dl.Log = append(dl.Log, fmt.Sprintf("executing: %s with args: %s", dl.DownloadProfile.Command, strings.Join(cmdSlice, " ")))
 	cmd := exec.Command(dl.DownloadProfile.Command, cmdSlice...)
 	cmd.Dir = dl.Config.Server.DownloadPath
 
