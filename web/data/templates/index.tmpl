@@ -46,7 +46,7 @@
                             <span class="filelist" x-text="item.files[0]"></span>
                         </span>
                         <span x-data="{open: false}" x-show="item.files && item.files.length > 1">
-                            <span x-text="item.files.length"></span> files...
+                            <span class="filelist" x-text="item.files.length + ' files...'"></span>
                             <button class="pure-button button-small" @click="open = ! open" x-text="open ? 'hide' : 'show'"></button>
                             <div x-show="open" x-transition>
                                 <ul class="filelist">
@@ -56,7 +56,7 @@
                                 </ul>
                             </div>
                         </span>
-                        <span x-show="! item.files || item.files.length == 0"
+                        <span class="filelist" x-show="! item.files || item.files.length == 0"
                               x-text="'fetching ' + item.url + '...'">
                         </span>
                     </td>
