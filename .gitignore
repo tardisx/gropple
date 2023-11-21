@@ -1,3 +1,4 @@
 gropple
-dist
 release
+dist
+.env
