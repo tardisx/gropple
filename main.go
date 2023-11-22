@@ -15,7 +15,7 @@ import (
 
 func main() {
 	versionInfo := &version.Manager{
-		VersionInfo: version.Info{CurrentVersion: "v0.7.0"},
+		VersionInfo: version.Info{CurrentVersion: "v1.0.0-alpha.1"},
 	}
 	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.GetInfo().CurrentVersion)
 
