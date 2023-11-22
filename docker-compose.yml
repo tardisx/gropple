@@ -1,12 +1,11 @@
 version: "3.9"
-    
+
 services:
   gropple:
-    build: .
     image: tardisx/gropple:latest
     volumes:
-      - ./gropple-config-dir:/config
-      - ./downloads:/downloads/
+      - /tmp/gropple-config-dir/:/config
+      - /tmp/downloads/:/downloads/
     restart: always
     ports:
       - "6123:6123"
