@@ -36,12 +36,8 @@ archives:
       - goos: windows
         format: zip
 
-# changelog:
-#   sort: asc
-#   filters:
-#     exclude:
-#       - "^docs:"
-#       - "^test:"
+changelog:
+  skip: true
 
 dockers:
   - image_templates:
