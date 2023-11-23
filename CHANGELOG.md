@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v1.0.0] - 2023-11-23
+
+- Don't start downloads until "start download" is pressed
+- Add "download option" for more per-download customisability, especially
+  for destinations
+- Removed "destinations" as that is now possible more flexibly with download
+  options. Configurations using destinations automatically migrated to an
+  appropriate `yt-dlp -o ...` download options
+- Gropple now available via docker
+- Clean up web interface display on index page, especially when a playlist
+  with many files is downloading
 
 ## [v0.6.0] - 2023-03-15
 
