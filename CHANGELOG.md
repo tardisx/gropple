@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.1] - 2023-11-24
+
+- Fix crash on migrating a config that had > 1 destinations
+
 ## [v1.0.0] - 2023-11-23
 
 - Don't start downloads until "start download" is pressed
