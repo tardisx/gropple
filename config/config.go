@@ -300,8 +300,8 @@ func (cs *ConfigService) LoadConfig() error {
 				Args: []string{"-o", fmt.Sprintf("%s/%%(title)s [%%(id)s].%%(ext)s", c.Destinations[i].Path)},
 			}
 			c.DownloadOptions = append(c.DownloadOptions, newDownloadOption)
-			c.Destinations = nil
 		}
+		c.Destinations = nil
 		configMigrated = true
 		log.Print("migrated config from version 3 => 4")
 	}
