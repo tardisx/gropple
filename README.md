@@ -164,6 +164,14 @@ Note that this also means that `yt-dlp` can resume partially downloaded files, a
 also automatically 'backfill', downloading only files that have not been
 downloaded yet from that playlist.
 
+## Downloading a list of URL's in bulk
+
+From main index page you can click the "Bulk" link in the menu to bring up the
+bulk queue page.
+
+In all respects this acts the same as the usual bookmarklet, but it has a
+textbox for pasting many URLs at once. All downloads will be queued immediately.
+
 ## Portable mode
 
 If you'd like to use gropple from a USB stick or similar, copy the config file
