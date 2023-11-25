@@ -13,7 +13,7 @@
                     <select class="pure-input-1-2" x-model="profile_chosen">
                         <option value="">choose a profile</option>
                     {{ range $i := .config.DownloadProfiles }}
-                        <option>{{ $i.Name }}</option>
+                        <option name="{{$i.Name}}">{{ $i.Name }}</option>
                     {{ end }}
                     </select>
                 </td>
@@ -24,7 +24,7 @@
                     <select  class="pure-input-1-2" x-model="download_option_chosen">
                         <option value="">no option</option>
                     {{ range $i := .config.DownloadOptions }}
-                        <option>{{ $i.Name }}</option>
+                        <option name="{{$i.Name}}">{{ $i.Name }}</option>
                     {{ end }}
                     </select>
                 </td>

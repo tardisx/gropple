@@ -1,0 +1,91 @@
+{{ define "content" }}
+
+{{ template "menu.tmpl" . }}
+
+<div id="layout" class="pure-g pure-u-1" x-data="bulk_create()" >
+
+<h1>Bulk upload</h1>
+
+    <p class="error"  x-show="error_message"  x-transition.duration.500ms x-text="error_message"></p>
+    <p class="success" x-show="success_message" x-transition.duration.500ms x-text="success_message"></p>
+
+    <p>Paste URLs here, one per line:</p>
+
+    <textarea x-model="urls" rows="20" cols="80">
+    </textarea>
+
+    <br><br>
+
+    <table class="pure-table" >
+        <tr>
+            <th>profile</th>
+            <td>
+                <select class="pure-input-1-2" x-model="profile_chosen">
+                    <option value="">choose a profile</option>
+                {{ range $i := .config.DownloadProfiles }}
+                    <option name="{{$i.Name}}">{{ $i.Name }}</option>
+                {{ end }}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>download option</th>
+            <td>
+                <select  class="pure-input-1-2" x-model="download_option_chosen">
+                    <option value="">no option</option>
+                {{ range $i := .config.DownloadOptions }}
+                    <option name="{{$i.Name}}">{{ $i.Name }}</option>
+                {{ end }}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>&nbsp;</th>
+            <td>
+                <button class="button-small pure-button" @click="start()">add to queue</button>
+            </td>
+        </tr>
+
+    </table>
+
+
+
+
+</div>
+
+{{ end }}
+
+{{ define "js" }}
+<script>
+    function bulk_create() {
+        return {
+            profile_chosen: "",
+            download_option_chosen: "",
+            urls: "",
+            error_message: "",
+            success_message: "",
+            start() {
+                let op = {
+                   method: 'POST',
+                   body: JSON.stringify({action: 'start', urls: this.urls, profile: this.profile_chosen, download_option: this.download_option_chosen}),
+                   headers: { 'Content-Type': 'application/json' }
+                };
+                fetch('/bulk', op)
+                .then(response => response.json())
+                .then(response => {
+                    console.log(response)
+                     if (response.error) {
+                        this.error_message = response.error;
+                        this.success_message = '';
+                        document.body.scrollTop = document.documentElement.scrollTop = 0;
+                    } else {
+                        this.error_message = '';
+                        this.success_message = response.message;
+                        this.urls = '';
+                    }
+                })
+            }
+        }
+    }
+</script>
+{{ end }}

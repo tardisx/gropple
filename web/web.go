@@ -55,6 +55,9 @@ func CreateRoutes(cs *config.ConfigService, dm *download.Manager, vm *version.Ma
 	r.HandleFunc("/fetch", fetchHandler(cs, vm, dm))
 	r.HandleFunc("/fetch/{id}", fetchHandler(cs, vm, dm))
 
+	// handle the bulk uploader
+	r.HandleFunc("/bulk", bulkHandler(cs, vm, dm))
+
 	// get/update info on a download
 	r.HandleFunc("/rest/fetch/{id}", fetchInfoOneRESTHandler(cs, dm))
 
@@ -397,5 +400,94 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 
 		}
 
+	}
+}
+
+func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Manager) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("bulkHandler")
+
+		method := r.Method
+		if method == "GET" {
+
+			t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/bulk.tmpl")
+			if err != nil {
+				panic(err)
+			}
+			templateData := map[string]interface{}{"config": cs.Config, "Version": vm.GetInfo()}
+
+			err = t.ExecuteTemplate(w, "layout", templateData)
+			if err != nil {
+				panic(err)
+			}
+
+			return
+
+		} else if method == "POST" {
+			type reqBulkType struct {
+				URLs                 string `json:"urls"`
+				ProfileChosen        string `json:"profile"`
+				DownloadOptionChosen string `json:"download_option"`
+			}
+
+			req := reqBulkType{}
+			json.NewDecoder(r.Body).Decode(&req)
+
+			log.Printf("bulk POST request: %#v", req)
+
+			if req.URLs == "" {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(errorResponse{
+					Success: false,
+					Error:   "No URLs supplied",
+				})
+				return
+			}
+
+			if req.ProfileChosen == "" {
+
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(errorResponse{
+					Success: false,
+					Error:   "you must choose a profile",
+				})
+				return
+			}
+
+			profile := cs.Config.ProfileCalled(req.ProfileChosen)
+			if profile == nil {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(errorResponse{
+					Success: false,
+					Error:   fmt.Sprintf("no such profile: '%s'", req.ProfileChosen),
+				})
+				return
+			}
+
+			option := cs.Config.DownloadOptionCalled(req.DownloadOptionChosen)
+
+			// create the new downloads
+			urls := strings.Split(req.URLs, "\n")
+			count := 0
+			for _, thisURL := range urls {
+				thisURL = strings.TrimSpace(thisURL)
+				if thisURL != "" {
+					newDL := download.NewDownload(thisURL, cs.Config)
+					newDL.DownloadOption = option
+					newDL.DownloadProfile = *profile
+					dm.AddDownload(newDL)
+					dm.Queue(newDL)
+					log.Printf("queued %s", thisURL)
+					count++
+				}
+			}
+
+			w.WriteHeader(200)
+			json.NewEncoder(w).Encode(successResponse{
+				Success: true,
+				Message: fmt.Sprintf("queued %d downloads", count),
+			})
+			return
+		}
 	}
 }
