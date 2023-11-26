@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [v1.1.1] - 2023-11-26
 
 - Fix bug where a brand-new config was created with an out-of-date version
+- Fix for portable mode and using executable in the current working directory
 
 ## [v1.1.0] - 2023-11-25
 

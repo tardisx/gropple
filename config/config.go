@@ -65,7 +65,7 @@ type ConfigService struct {
 func (cs *ConfigService) LoadTestConfig() {
 	cs.LoadDefaultConfig()
 	cs.Config.Server.DownloadPath = "/tmp"
-	cs.Config.DownloadProfiles = []DownloadProfile{{Name: "test profile", Command: "sleep", Args: []string{"5"}}}
+	cs.Config.DownloadProfiles = []DownloadProfile{{Name: "test profile", Command: "/bin/sleep", Args: []string{"5"}}}
 }
 
 func (cs *ConfigService) LoadDefaultConfig() {
