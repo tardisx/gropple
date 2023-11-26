@@ -282,8 +282,15 @@ func (dl *Download) Begin() {
 	}
 
 	dl.Log = append(dl.Log, fmt.Sprintf("executing: %s with args: %s", dl.DownloadProfile.Command, strings.Join(cmdSlice, " ")))
-	cmd := exec.Command(dl.DownloadProfile.Command, cmdSlice...)
+
+	execAbsolutePath, err := filepath.Abs(dl.DownloadProfile.Command)
+	if err != nil {
+		panic(err)
+	}
+
+	cmd := exec.Command(execAbsolutePath, cmdSlice...)
 	cmd.Dir = dl.Config.Server.DownloadPath
+	log.Printf("Executing command: %v (executable: %s) in %s", cmd, execAbsolutePath, dl.Config.Server.DownloadPath)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -307,9 +314,10 @@ func (dl *Download) Begin() {
 		return
 	}
 
-	log.Printf("Executing command: %v", cmd)
 	err = cmd.Start()
 	if err != nil {
+		log.Printf("Executing command failed: %s", err.Error())
+
 		dl.State = STATE_FAILED
 		dl.Finished = true
 		dl.FinishedTS = time.Now()
