@@ -98,7 +98,7 @@ func (cs *ConfigService) LoadDefaultConfig() {
 	defaultConfig.Destinations = nil
 	defaultConfig.DownloadOptions = make([]DownloadOption, 0)
 
-	defaultConfig.ConfigVersion = 3
+	defaultConfig.ConfigVersion = 4
 
 	cs.Config = &defaultConfig
 

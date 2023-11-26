@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.1] - 2023-11-26
+
+- Fix bug where a brand-new config was created with an out-of-date version
+
 ## [v1.1.0] - 2023-11-25
 
 - Add feature to bulk add URL's for downloading
