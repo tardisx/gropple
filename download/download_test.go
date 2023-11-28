@@ -383,7 +383,7 @@ func TestLookForExecutable(t *testing.T) {
 		assert.Equal(t, cmdPath, path)
 	}
 
-	cmd = "../../../../.." + cmdPath
+	cmd = "../../../../../../../../.." + cmdPath
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
 		assert.Equal(t, cmdPath, path)
