@@ -2,6 +2,7 @@ package download
 
 import (
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -364,26 +365,28 @@ Deleting original file The Greatest Shot In Television [2WoDQBhJCVQ].f140.m4a (p
 }
 
 func TestLookForExecutable(t *testing.T) {
+	cmdPath, err := exec.LookPath("sleep")
+	if err != nil {
+		t.Errorf("cannot run this test without knowing about sleep: %s", err)
+		t.FailNow()
+	}
+
 	cmd := "sleep"
 	path, err := absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
-			t.Errorf("bad path: %s", path)
-		}
+		assert.Equal(t, cmdPath, path)
 	}
+
 	cmd = "/bin/sleep"
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
-			t.Errorf("bad path: %s", path)
-		}
+		assert.Equal(t, cmdPath, path)
 	}
-	cmd = "../../../../../bin/sleep"
+
+	cmd = "../../../../.." + cmdPath
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
-			t.Errorf("bad path: %s", path)
-		}
+		assert.Equal(t, cmdPath, path)
 	}
 	cmd = "./sleep"
 	_, err = absPathToExecutable(cmd)
@@ -393,9 +396,7 @@ func TestLookForExecutable(t *testing.T) {
 	cmd = "./sleep"
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
-			t.Errorf("bad path: %s", path)
-		}
+		assert.Equal(t, cmdPath, path)
 	}
 
 }
