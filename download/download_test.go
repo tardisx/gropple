@@ -367,17 +367,23 @@ func TestLookForExecutable(t *testing.T) {
 	cmd := "sleep"
 	path, err := absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		assert.Equal(t, path, "/bin/sleep")
+		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
+			t.Errorf("bad path: %s", path)
+		}
 	}
 	cmd = "/bin/sleep"
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		assert.Equal(t, path, "/bin/sleep")
+		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
+			t.Errorf("bad path: %s", path)
+		}
 	}
 	cmd = "../../../../../bin/sleep"
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		assert.Equal(t, path, "/bin/sleep")
+		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
+			t.Errorf("bad path: %s", path)
+		}
 	}
 	cmd = "./sleep"
 	_, err = absPathToExecutable(cmd)
@@ -387,7 +393,9 @@ func TestLookForExecutable(t *testing.T) {
 	cmd = "./sleep"
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
-		assert.Equal(t, path, "/bin/sleep")
+		if path != "/bin/sleep" && path != "/usr/bin/sleep" {
+			t.Errorf("bad path: %s", path)
+		}
 	}
 
 }
