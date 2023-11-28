@@ -3,6 +3,7 @@ package download
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -370,6 +371,7 @@ func TestLookForExecutable(t *testing.T) {
 		t.Errorf("cannot run this test without knowing about sleep: %s", err)
 		t.FailNow()
 	}
+	cmdDir := filepath.Dir(cmdPath)
 
 	cmd := "sleep"
 	path, err := absPathToExecutable(cmd)
@@ -377,7 +379,7 @@ func TestLookForExecutable(t *testing.T) {
 		assert.Equal(t, cmdPath, path)
 	}
 
-	cmd = "/bin/sleep"
+	cmd = cmdPath
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
 		assert.Equal(t, cmdPath, path)
@@ -392,7 +394,7 @@ func TestLookForExecutable(t *testing.T) {
 	_, err = absPathToExecutable(cmd)
 	assert.Error(t, err)
 
-	os.Chdir("/bin")
+	os.Chdir(cmdDir)
 	cmd = "./sleep"
 	path, err = absPathToExecutable(cmd)
 	if assert.NoError(t, err) {
