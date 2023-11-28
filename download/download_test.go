@@ -1,11 +1,13 @@
 package download
 
 import (
+	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/tardisx/gropple/config"
 )
 
@@ -357,6 +359,35 @@ Deleting original file The Greatest Shot In Television [2WoDQBhJCVQ].f140.m4a (p
 	}
 	if newD.PlaylistTotal != 0 {
 		t.Error("playlist detected but should not be")
+	}
+
+}
+
+func TestLookForExecutable(t *testing.T) {
+	cmd := "sleep"
+	path, err := absPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, path, "/bin/sleep")
+	}
+	cmd = "/bin/sleep"
+	path, err = absPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, path, "/bin/sleep")
+	}
+	cmd = "../../../../../bin/sleep"
+	path, err = absPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, path, "/bin/sleep")
+	}
+	cmd = "./sleep"
+	_, err = absPathToExecutable(cmd)
+	assert.Error(t, err)
+
+	os.Chdir("/bin")
+	cmd = "./sleep"
+	path, err = absPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, path, "/bin/sleep")
 	}
 
 }
