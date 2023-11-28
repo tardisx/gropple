@@ -189,9 +189,10 @@ func (c *Config) UpdateFromJSON(j []byte) error {
 		}
 
 		// check the command exists
-		_, err := exec.LookPath(newConfig.DownloadProfiles[i].Command)
+
+		_, err := AbsPathToExecutable(newConfig.DownloadProfiles[i].Command)
 		if err != nil {
-			return fmt.Errorf("Could not find %s on the path", newConfig.DownloadProfiles[i].Command)
+			return fmt.Errorf("problem with command '%s': %s", newConfig.DownloadProfiles[i].Command, err)
 		}
 	}
 
@@ -336,4 +337,29 @@ func (cs *ConfigService) WriteConfig() {
 		log.Fatalf("could not write config file %s: %s", path, err)
 	}
 	file.Close()
+}
+
+// AbsPathToExecutable takes a command name, which may or may not be path-qualified,
+// and returns the fully qualified path to it, or an error if could not be found, or
+// if it does not appear to be a file.
+func AbsPathToExecutable(cmd string) (string, error) {
+
+	pathCmd, err := exec.LookPath(cmd)
+	if err != nil {
+		return "", fmt.Errorf("could not LookPath '%s': %w", cmd, err)
+	}
+
+	execAbsolutePath, err := filepath.Abs(pathCmd)
+	if err != nil {
+		return "", fmt.Errorf("could not get absolute path to '%s': %w", cmd, err)
+	}
+	fi, err := os.Stat(execAbsolutePath)
+	if err != nil {
+		return "", fmt.Errorf("could not get stat '%s': %w", cmd, err)
+	}
+	if !fi.Mode().IsRegular() {
+		return "", fmt.Errorf("'%s' is not a regular file: %w", cmd, err)
+	}
+
+	return execAbsolutePath, nil
 }

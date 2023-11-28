@@ -281,12 +281,17 @@ func (dl *Download) Begin() {
 		cmdSlice = append(cmdSlice, dl.Url)
 	}
 
-	dl.Log = append(dl.Log, fmt.Sprintf("executing: %s with args: %s", dl.DownloadProfile.Command, strings.Join(cmdSlice, " ")))
-
-	cmdPath, err := absPathToExecutable(dl.DownloadProfile.Command)
+	cmdPath, err := config.AbsPathToExecutable(dl.DownloadProfile.Command)
 	if err != nil {
-		panic(err)
+		dl.State = STATE_FAILED
+		dl.Finished = true
+		dl.FinishedTS = time.Now()
+		dl.Log = append(dl.Log, fmt.Sprintf("error finding executable for downloader: %s", err.Error()))
+		dl.Lock.Unlock()
+		return
 	}
+
+	dl.Log = append(dl.Log, fmt.Sprintf("executing: %s (%s) with args: %s", dl.DownloadProfile.Command, cmdPath, strings.Join(cmdSlice, " ")))
 
 	cmd := exec.Command(cmdPath, cmdSlice...)
 	cmd.Dir = dl.Config.Server.DownloadPath
@@ -299,7 +304,6 @@ func (dl *Download) Begin() {
 		dl.FinishedTS = time.Now()
 		dl.Log = append(dl.Log, fmt.Sprintf("error setting up stdout pipe: %v", err))
 		dl.Lock.Unlock()
-
 		return
 	}
 
@@ -371,28 +375,6 @@ func (dl *Download) Begin() {
 		}
 	}
 	dl.Lock.Unlock()
-}
-
-func absPathToExecutable(cmd string) (string, error) {
-
-	pathCmd, err := exec.LookPath(cmd)
-	if err != nil {
-		return "", fmt.Errorf("could not LookPath '%s': %w", cmd, err)
-	}
-
-	execAbsolutePath, err := filepath.Abs(pathCmd)
-	if err != nil {
-		return "", fmt.Errorf("could not get absolute path to '%s': %w", cmd, err)
-	}
-	fi, err := os.Stat(execAbsolutePath)
-	if err != nil {
-		return "", fmt.Errorf("could not get stat '%s': %w", cmd, err)
-	}
-	if !fi.Mode().IsRegular() {
-		return "", fmt.Errorf("'%s' is not a regular file: %w", cmd, err)
-	}
-
-	return execAbsolutePath, nil
 }
 
 // updateDownload updates the download based on data from the reader. Expects the

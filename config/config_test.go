@@ -2,6 +2,8 @@ package config
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -171,4 +173,42 @@ func configServiceFromString(configString string) *ConfigService {
 		ConfigPath: tmpFile.Name(),
 	}
 	return &cs
+}
+
+func TestLookForExecutable(t *testing.T) {
+	cmdPath, err := exec.LookPath("sleep")
+	if err != nil {
+		t.Errorf("cannot run this test without knowing about sleep: %s", err)
+		t.FailNow()
+	}
+	cmdDir := filepath.Dir(cmdPath)
+
+	cmd := "sleep"
+	path, err := AbsPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, cmdPath, path)
+	}
+
+	cmd = cmdPath
+	path, err = AbsPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, cmdPath, path)
+	}
+
+	cmd = "../../../../../../../../.." + cmdPath
+	path, err = AbsPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, cmdPath, path)
+	}
+	cmd = "./sleep"
+	_, err = AbsPathToExecutable(cmd)
+	assert.Error(t, err)
+
+	os.Chdir(cmdDir)
+	cmd = "./sleep"
+	path, err = AbsPathToExecutable(cmd)
+	if assert.NoError(t, err) {
+		assert.Equal(t, cmdPath, path)
+	}
+
 }

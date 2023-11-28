@@ -84,7 +84,10 @@
 
                             <label x-bind:for="'config-profiles-'+i+'-command'">Command to run</label>
                             <input type="text" x-bind:id="'config-profiles-'+i+'-command'" class="input-long" placeholder="name" x-model="profile.command" />
-                            <span class="pure-form-message">Which command to run. Your path will be searched, or you can specify the full path here.</span>
+                            <span class="pure-form-message">Which command to run. Your path will be searched, or you can specify the full path here.
+                            If you are using gropple in portable mode and store the executables with the gropple executable, use a prefix of
+                            <tt>./</tt>, for instance <tt>yt-dlp.exe</tt>.
+                            </span>
 
 
                             <label>Arguments</label>

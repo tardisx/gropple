@@ -1,15 +1,11 @@
 package download
 
 import (
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tardisx/gropple/config"
 )
 
@@ -361,44 +357,6 @@ Deleting original file The Greatest Shot In Television [2WoDQBhJCVQ].f140.m4a (p
 	}
 	if newD.PlaylistTotal != 0 {
 		t.Error("playlist detected but should not be")
-	}
-
-}
-
-func TestLookForExecutable(t *testing.T) {
-	cmdPath, err := exec.LookPath("sleep")
-	if err != nil {
-		t.Errorf("cannot run this test without knowing about sleep: %s", err)
-		t.FailNow()
-	}
-	cmdDir := filepath.Dir(cmdPath)
-
-	cmd := "sleep"
-	path, err := absPathToExecutable(cmd)
-	if assert.NoError(t, err) {
-		assert.Equal(t, cmdPath, path)
-	}
-
-	cmd = cmdPath
-	path, err = absPathToExecutable(cmd)
-	if assert.NoError(t, err) {
-		assert.Equal(t, cmdPath, path)
-	}
-
-	cmd = "../../../../../../../../.." + cmdPath
-	path, err = absPathToExecutable(cmd)
-	if assert.NoError(t, err) {
-		assert.Equal(t, cmdPath, path)
-	}
-	cmd = "./sleep"
-	_, err = absPathToExecutable(cmd)
-	assert.Error(t, err)
-
-	os.Chdir(cmdDir)
-	cmd = "./sleep"
-	path, err = absPathToExecutable(cmd)
-	if assert.NoError(t, err) {
-		assert.Equal(t, cmdPath, path)
 	}
 
 }
