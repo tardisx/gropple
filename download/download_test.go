@@ -21,11 +21,11 @@ func TestUpdateMetadata(t *testing.T) {
 	// eta's might be xx:xx:xx or xx:xx
 	newD.updateMetadata("[download]   0.0% of 504.09MiB at 135.71KiB/s ETA 01:03:36")
 	if newD.Eta != "01:03:36" {
-		t.Fatalf("bad long eta in dl\n%#v", newD)
+		t.Fatalf("bad long eta in dl\n%#v", newD) //nolint
 	}
 	newD.updateMetadata("[download]   0.0% of 504.09MiB at 397.98KiB/s ETA 21:38")
 	if newD.Eta != "21:38" {
-		t.Fatalf("bad short eta in dl\n%#v", newD)
+		t.Fatalf("bad short eta in dl\n%#v", newD) //nolint
 	}
 
 	// added a new file, now we are tracking two
@@ -44,7 +44,7 @@ func TestUpdateMetadata(t *testing.T) {
 	// different download
 	newD.updateMetadata("[download]  99.3% of ~1.42GiB at 320.87KiB/s ETA 00:07 (frag 212/214)")
 	if newD.Eta != "00:07" {
-		t.Fatalf("bad short eta in dl with frag\n%v", newD)
+		t.Fatalf("bad short eta in dl with frag\n%v", newD) //nolint
 	}
 
 	// [FixupM3u8] Fixing MPEG-TS in MP4 container of "file [-168849776_456239489].mp4"

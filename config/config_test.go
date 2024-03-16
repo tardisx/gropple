@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -166,8 +167,13 @@ profiles:
 
 func configServiceFromString(configString string) *ConfigService {
 	tmpFile, _ := os.CreateTemp("", "gropple_test_*.yml")
-	tmpFile.Write([]byte(configString))
-	tmpFile.Close()
+	_, err1 := tmpFile.Write([]byte(configString))
+	err2 := tmpFile.Close()
+
+	if errors.Join(err1, err2) != nil {
+		panic("got unexpected error")
+	}
+
 	cs := ConfigService{
 		Config:     &Config{},
 		ConfigPath: tmpFile.Name(),
@@ -204,7 +210,7 @@ func TestLookForExecutable(t *testing.T) {
 	_, err = AbsPathToExecutable(cmd)
 	assert.Error(t, err)
 
-	os.Chdir(cmdDir)
+	os.Chdir(cmdDir) //nolint
 	cmd = "./sleep"
 	path, err = AbsPathToExecutable(cmd)
 	if assert.NoError(t, err) {

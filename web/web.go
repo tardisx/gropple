@@ -94,7 +94,7 @@ func homeHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 		if err != nil {
 			log.Printf("error: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
 
@@ -118,7 +118,7 @@ func homeHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 		if err != nil {
 			log.Printf("error: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
 	}
@@ -157,7 +157,7 @@ func configHandler() func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("error: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
 
@@ -165,7 +165,7 @@ func configHandler() func(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("error: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
 	}
@@ -181,7 +181,7 @@ func configRESTHandler(cs *config.ConfigService) func(w http.ResponseWriter, r *
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 			err = cs.Config.UpdateFromJSON(b)
@@ -238,7 +238,7 @@ func fetchInfoOneRESTHandler(cs *config.ConfigService, dm *download.Manager) fun
 				if err != nil {
 					log.Printf("error: %s", err)
 					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte(err.Error()))
+					_, _ = w.Write([]byte(err.Error()))
 					return
 				}
 
@@ -291,7 +291,7 @@ func fetchInfoRESTHandler(dm *download.Manager) func(w http.ResponseWriter, r *h
 		if err != nil {
 			log.Printf("error: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, _ = w.Write([]byte(err.Error()))
 			return
 		}
 		_, err = w.Write(b)
@@ -330,7 +330,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 
@@ -340,7 +340,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 			return
@@ -353,23 +353,29 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			}
 
 			req := reqType{}
-			json.NewDecoder(r.Body).Decode(&req)
+			err := json.NewDecoder(r.Body).Decode(&req)
+			if err != nil {
+				log.Printf("error decoding body of request: %s", err)
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(err.Error()))
+				return
+			}
 
 			log.Printf("popup POST request: %#v", req)
 
 			if req.URL == "" {
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(errorResponse{
+				w.WriteHeader(http.StatusBadRequest)
+				_ = json.NewEncoder(w).Encode(errorResponse{
 					Success: false,
 					Error:   "No URL supplied",
 				})
+
 				return
 			} else {
-
 				if req.ProfileChosen == "" {
 
 					w.WriteHeader(400)
-					json.NewEncoder(w).Encode(errorResponse{
+					_ = json.NewEncoder(w).Encode(errorResponse{
 						Success: false,
 						Error:   "you must choose a profile",
 					})
@@ -379,7 +385,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 				profile := cs.Config.ProfileCalled(req.ProfileChosen)
 				if profile == nil {
 					w.WriteHeader(400)
-					json.NewEncoder(w).Encode(errorResponse{
+					_ = json.NewEncoder(w).Encode(errorResponse{
 						Success: false,
 						Error:   fmt.Sprintf("no such profile: '%s'", req.ProfileChosen),
 					})
@@ -397,7 +403,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 				dm.Queue(newDL)
 
 				w.WriteHeader(200)
-				json.NewEncoder(w).Encode(queuedResponse{
+				_ = json.NewEncoder(w).Encode(queuedResponse{
 					Success:  true,
 					Location: fmt.Sprintf("/fetch/%d", id),
 				})
@@ -418,7 +424,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 			templateData := map[string]interface{}{"config": cs.Config, "url": url[0], "Version": vm.GetInfo()}
@@ -427,7 +433,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 
@@ -447,7 +453,7 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 			templateData := map[string]interface{}{"config": cs.Config, "Version": vm.GetInfo()}
@@ -456,7 +462,7 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			if err != nil {
 				log.Printf("error: %s", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				_, _ = w.Write([]byte(err.Error()))
 				return
 			}
 
@@ -470,13 +476,19 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			}
 
 			req := reqBulkType{}
-			json.NewDecoder(r.Body).Decode(&req)
+			err := json.NewDecoder(r.Body).Decode(&req)
+			if err != nil {
+				log.Printf("error decoding request body: %s", err)
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(err.Error()))
+				return
+			}
 
 			log.Printf("bulk POST request: %#v", req)
 
 			if req.URLs == "" {
 				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(errorResponse{
+				_ = json.NewEncoder(w).Encode(errorResponse{
 					Success: false,
 					Error:   "No URLs supplied",
 				})
@@ -486,7 +498,7 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			if req.ProfileChosen == "" {
 
 				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(errorResponse{
+				_ = json.NewEncoder(w).Encode(errorResponse{
 					Success: false,
 					Error:   "you must choose a profile",
 				})
@@ -496,7 +508,7 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			profile := cs.Config.ProfileCalled(req.ProfileChosen)
 			if profile == nil {
 				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(errorResponse{
+				_ = json.NewEncoder(w).Encode(errorResponse{
 					Success: false,
 					Error:   fmt.Sprintf("no such profile: '%s'", req.ProfileChosen),
 				})
@@ -522,7 +534,7 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			}
 
 			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(successResponse{
+			_ = json.NewEncoder(w).Encode(successResponse{
 				Success: true,
 				Message: fmt.Sprintf("queued %d downloads", count),
 			})
