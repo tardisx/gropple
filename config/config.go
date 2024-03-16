@@ -319,7 +319,8 @@ func (cs *ConfigService) LoadConfig() error {
 func (cs *ConfigService) WriteConfig() {
 	s, err := yaml.Marshal(cs.Config)
 	if err != nil {
-		panic(err)
+		log.Printf("error writing config: %s", err)
+		os.Exit(1)
 	}
 
 	path := cs.ConfigPath

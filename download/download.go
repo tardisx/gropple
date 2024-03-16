@@ -429,8 +429,6 @@ func (dl *Download) updateMetadata(s string) {
 		p, err := strconv.ParseFloat(matches[1], 32)
 		if err == nil {
 			dl.Percent = float32(p)
-		} else {
-			panic(err)
 		}
 	}
 

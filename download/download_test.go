@@ -317,7 +317,7 @@ func TestUpdateMetadataSingle(t *testing.T) {
 [youtube] 2WoDQBhJCVQ: Downloading android player API JSON
 [info] 2WoDQBhJCVQ: Downloading 1 format(s): 137+140
 [info] Writing video metadata as JSON to: The Greatest Shot In Television [2WoDQBhJCVQ].info.json
-[download] Destination: The Greatest Shot In Television [2WoDQBhJCVQ].f137.mp4
+[debug] Invoking hlsnative downloader on "https://example.org/urls/1.2.3.4%
 [download]   0.0% of 12.82MiB at 510.94KiB/s ETA 00:26
 [download]   0.0% of 12.82MiB at 966.50KiB/s ETA 00:13
 [download]   0.1% of 12.82MiB at  1.54MiB/s ETA 00:08

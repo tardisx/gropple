@@ -92,7 +92,10 @@ func homeHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 
 		t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/index.tmpl")
 		if err != nil {
-			panic(err)
+			log.Printf("error: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
 		}
 
 		type Info struct {
@@ -113,7 +116,10 @@ func homeHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 		defer dm.Lock.Unlock()
 		err = t.ExecuteTemplate(w, "layout", info)
 		if err != nil {
-			panic(err)
+			log.Printf("error: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
 		}
 	}
 }
@@ -149,12 +155,18 @@ func configHandler() func(w http.ResponseWriter, r *http.Request) {
 
 		t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/config.tmpl")
 		if err != nil {
-			panic(err)
+			log.Printf("error: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
 		}
 
 		err = t.ExecuteTemplate(w, "layout", nil)
 		if err != nil {
-			panic(err)
+			log.Printf("error: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
 		}
 	}
 }
@@ -167,7 +179,10 @@ func configRESTHandler(cs *config.ConfigService) func(w http.ResponseWriter, r *
 			log.Printf("Updating config")
 			b, err := io.ReadAll(r.Body)
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 			err = cs.Config.UpdateFromJSON(b)
 
@@ -221,7 +236,10 @@ func fetchInfoOneRESTHandler(cs *config.ConfigService, dm *download.Manager) fun
 
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
-					panic(err)
+					log.Printf("error: %s", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					w.Write([]byte(err.Error()))
+					return
 				}
 
 				err = json.Unmarshal(b, &thisReq)
@@ -271,7 +289,10 @@ func fetchInfoRESTHandler(dm *download.Manager) func(w http.ResponseWriter, r *h
 
 		b, err := dm.DownloadsAsJSON()
 		if err != nil {
-			panic(err)
+			log.Printf("error: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
 		}
 		_, err = w.Write(b)
 		if err != nil {
@@ -307,14 +328,20 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 
 			t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/popup.tmpl")
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 
 			templateData := map[string]interface{}{"dl": dl, "config": cs.Config, "canStop": download.CanStopDownload, "Version": vm.GetInfo()}
 
 			err = t.ExecuteTemplate(w, "layout", templateData)
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 			return
 		} else if method == "POST" {
@@ -389,13 +416,19 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 
 			t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/popup_create.tmpl")
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 			templateData := map[string]interface{}{"config": cs.Config, "url": url[0], "Version": vm.GetInfo()}
 
 			err = t.ExecuteTemplate(w, "layout", templateData)
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 
 		}
@@ -412,13 +445,19 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 
 			t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/bulk.tmpl")
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 			templateData := map[string]interface{}{"config": cs.Config, "Version": vm.GetInfo()}
 
 			err = t.ExecuteTemplate(w, "layout", templateData)
 			if err != nil {
-				panic(err)
+				log.Printf("error: %s", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
 			}
 
 			return
