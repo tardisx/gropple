@@ -2,3 +2,4 @@ gropple
 release
 dist
 .env
+dist/
