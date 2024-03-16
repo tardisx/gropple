@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.2] - 2024-03-16
+
+- Fix a crash for a certain pattern of log line
+
 ## [v1.1.1] - 2023-12-08
 
 - Fix bug where a brand-new config was created with an out-of-date version
