@@ -19,7 +19,8 @@ var (
 
 func main() {
 	versionInfo := &v.Manager{
-		VersionInfo: v.Info{CurrentVersion: version},
+		// version from goreleaser has no leading 'v', even if the tag does
+		VersionInfo: v.Info{CurrentVersion: "v" + version},
 	}
 	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.GetInfo().CurrentVersion)
 
