@@ -416,7 +416,7 @@ func fetchHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Ma
 
 			if !present {
 				w.WriteHeader(400)
-				fmt.Fprint(w, "No url supplied")
+				_, _ = fmt.Fprint(w, "No url supplied")
 				return
 			}
 
@@ -447,7 +447,8 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 		log.Printf("bulkHandler")
 
 		method := r.Method
-		if method == "GET" {
+		switch method {
+		case "GET":
 
 			t, err := template.ParseFS(webFS, "data/templates/layout.tmpl", "data/templates/menu.tmpl", "data/templates/bulk.tmpl")
 			if err != nil {
@@ -467,8 +468,7 @@ func bulkHandler(cs *config.ConfigService, vm *version.Manager, dm *download.Man
 			}
 
 			return
-
-		} else if method == "POST" {
+		case "POST":
 			type reqBulkType struct {
 				URLs                 string `json:"urls"`
 				ProfileChosen        string `json:"profile"`

@@ -277,7 +277,7 @@ func (dl *Download) Begin() {
 	}
 
 	// only add the url if it's not empty or an example URL. This helps us with testing
-	if !(dl.Url == "" || strings.Contains(dl.domain(), "example.org")) {
+	if dl.Url != "" && !strings.Contains(dl.domain(), "example.org") {
 		cmdSlice = append(cmdSlice, dl.Url)
 	}
 

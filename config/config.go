@@ -266,14 +266,14 @@ func (cs *ConfigService) LoadConfig() error {
 	path := cs.ConfigPath
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("Could not read config '%s': %v", path, err)
+		return fmt.Errorf("could not read config '%s': %v", path, err)
 	}
 	c := Config{}
 	cs.Config = &c
 
 	err = yaml.Unmarshal(b, &c)
 	if err != nil {
-		return fmt.Errorf("Could not parse YAML config '%s': %v", path, err)
+		return fmt.Errorf("could not parse YAML config '%s': %v", path, err)
 	}
 
 	// do migrations
