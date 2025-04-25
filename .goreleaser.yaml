@@ -49,5 +49,5 @@ dockers:
 docker_manifests:
   - name_template: "tardisx/gropple:{{ .Tag }}"
     image_templates:
-      - "myorg/myuser:{{ .Tag }}-amd64"
-      - "myorg/myuser:{{ .Tag }}-arm64"
+      - "tardisx/gropple:{{ .Tag }}-amd64"
+      - "tardisx/gropple:{{ .Tag }}-arm64"
