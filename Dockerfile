@@ -1,4 +1,4 @@
-FROM ubuntu:mantic
+FROM ubuntu:noble
 COPY gropple /
 
 RUN apt update &&  apt install -y curl python3 ffmpeg

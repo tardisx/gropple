@@ -1,8 +1,9 @@
+version: 2
+
 before:
   hooks:
     - go mod tidy
     - go test ./...
-    # - golangci-lint run
 
 builds:
   - env:
@@ -13,11 +14,11 @@ builds:
       - darwin
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
-      {{- .Os }}_
+      {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
@@ -25,16 +26,28 @@ archives:
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 
 changelog:
-  skip: true
+  disable: true
 
 dockers:
   - image_templates:
-      - "tardisx/gropple:{{ .Tag }}"
-      - "tardisx/gropple:v{{ .Major }}"
-      - "tardisx/gropple:v{{ .Major }}.{{ .Minor }}"
-      - "tardisx/gropple:latest"
+      - "tardisx/gropple:{{ .Tag }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "tardisx/gropple:{{ .Tag }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+    goarch: arm64
 
-
+docker_manifests:
+  - name_template: "tardisx/gropple:{{ .Tag }}"
+    image_templates:
+      - "myorg/myuser:{{ .Tag }}-amd64"
+      - "myorg/myuser:{{ .Tag }}-arm64"
