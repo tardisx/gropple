@@ -9,13 +9,17 @@ import (
 
 	"github.com/tardisx/gropple/config"
 	"github.com/tardisx/gropple/download"
-	"github.com/tardisx/gropple/version"
+	v "github.com/tardisx/gropple/version"
 	"github.com/tardisx/gropple/web"
 )
 
+var (
+	version = "dev"
+)
+
 func main() {
-	versionInfo := &version.Manager{
-		VersionInfo: version.Info{CurrentVersion: "v1.1.4-alpha.0"},
+	versionInfo := &v.Manager{
+		VersionInfo: v.Info{CurrentVersion: version},
 	}
 	log.Printf("Starting gropple %s - https://github.com/tardisx/gropple", versionInfo.GetInfo().CurrentVersion)
 
