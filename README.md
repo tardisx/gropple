@@ -1,3 +1,7 @@
+# ARCHIVED - 2025-05-23
+
+Due to GitHub's AI enshittification, this project has been moved to https://code.ppl.town/justin/gropple
+
 # gropple
 
 A frontend to youtube-dl (or compatible forks, like yt-dlp) to download videos
